@@ -1,0 +1,513 @@
+/* Дизайн-токени. Префікс --hdrtr- уникає колізій з хостовою сторінкою. */
+:root {
+  --hdrtr-accent-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --hdrtr-accent: #818cf8;
+  --hdrtr-accent-2: #a78bfa;
+  --hdrtr-accent-soft: rgba(129, 140, 248, .16);
+  --hdrtr-accent-ring: rgba(129, 140, 248, .40);
+  --hdrtr-success: #34d399;
+  --hdrtr-danger: #fb7185;
+  --hdrtr-text: #f4f4f5;
+  --hdrtr-text-2: #b7b8c4;
+  --hdrtr-text-3: #83848f;
+  --hdrtr-surface: rgba(18, 19, 26, .72);
+  --hdrtr-surface-2: rgba(30, 31, 42, .72);
+  --hdrtr-border: rgba(255, 255, 255, .10);
+  --hdrtr-border-strong: rgba(255, 255, 255, .18);
+  --hdrtr-r-sm: 8px;
+  --hdrtr-r-md: 12px;
+  --hdrtr-r-lg: 16px;
+  --hdrtr-pill: 999px;
+  --hdrtr-sh-1: 0 4px 14px rgba(0, 0, 0, .35);
+  --hdrtr-sh-2: 0 18px 44px rgba(0, 0, 0, .52);
+  --hdrtr-blur: blur(18px) saturate(1.4);
+  --hdrtr-dur: 150ms;
+  --hdrtr-ease: cubic-bezier(.2, .7, .2, 1);
+  --hdrtr-font: -apple-system, 'Segoe UI', Roboto, system-ui, sans-serif;
+}
+
+/* Контейнер субтитрів поверх відео */
+#hdrezka-tr-subs {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  z-index: 2147483645;
+  pointer-events: none;
+  text-align: center;
+  max-width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  font-family: var(--hdrtr-font);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: .2px;
+  color: #fff;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+#hdrezka-tr-subs .hdr-line {
+  display: inline-block;
+  margin: 0;
+  padding: 3px 14px;
+  background: rgba(10, 11, 16, .44);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border-radius: var(--hdrtr-r-md);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .6);
+  box-sizing: border-box;
+}
+
+#hdrezka-tr-subs .hdr-word {
+  display: inline-block;
+  box-sizing: border-box;
+  padding: 0 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  pointer-events: auto;
+  color: inherit;
+  background: transparent;
+  transition: background var(--hdrtr-dur) var(--hdrtr-ease), color var(--hdrtr-dur) var(--hdrtr-ease);
+}
+
+#hdrezka-tr-subs .hdr-word:hover {
+  background: var(--hdrtr-accent-soft);
+  color: #c7d2fe;
+}
+
+#hdrezka-tr-subs .hdr-word.hdr-selected {
+  background: var(--hdrtr-accent-grad);
+  color: #fff;
+}
+
+/* Tooltip з перекладом */
+#hdrezka-tr-tooltip {
+  position: fixed;
+  z-index: 2147483646;
+  box-sizing: border-box;
+  background: var(--hdrtr-surface);
+  -webkit-backdrop-filter: var(--hdrtr-blur);
+  backdrop-filter: var(--hdrtr-blur);
+  color: var(--hdrtr-text);
+  padding: 15px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--hdrtr-border);
+  box-shadow: var(--hdrtr-sh-2);
+  font-family: var(--hdrtr-font);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-transform: none;
+  min-width: 200px;
+  max-width: 360px;
+  pointer-events: auto;
+  user-select: text;
+  display: none;
+  opacity: 0;
+  transform: translateY(6px) scale(.98);
+  transition: opacity var(--hdrtr-dur) var(--hdrtr-ease),
+              transform var(--hdrtr-dur) var(--hdrtr-ease);
+}
+
+#hdrezka-tr-tooltip.visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+#hdrezka-tr-tooltip .hdr-tt-word {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--hdrtr-text);
+  margin-bottom: 4px;
+}
+
+#hdrezka-tr-tooltip .hdr-tt-meta {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  text-transform: none;
+  color: #c7d2fe;
+  background: var(--hdrtr-accent-soft);
+  padding: 3px 9px;
+  border-radius: var(--hdrtr-pill);
+  margin-bottom: 6px;
+}
+
+#hdrezka-tr-tooltip .hdr-tt-translation {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #eef;
+  margin-bottom: 6px;
+}
+
+#hdrezka-tr-tooltip .hdr-tt-example {
+  font-size: 12.5px;
+  line-height: 1.4;
+  font-style: italic;
+  color: var(--hdrtr-text-2);
+  border-left: 2px solid var(--hdrtr-accent);
+  border-radius: 0;
+  padding-left: 10px;
+  margin-top: 11px;
+}
+
+#hdrezka-tr-tooltip .hdr-tt-loading {
+  color: var(--hdrtr-text-3);
+  font-style: italic;
+}
+
+#hdrezka-tr-tooltip .hdr-tt-error {
+  color: var(--hdrtr-danger);
+  font-size: 12px;
+}
+
+#hdrezka-tr-tooltip .hdr-tt-actions {
+  margin-top: 13px;
+  display: flex;
+  gap: 8px;
+}
+
+#hdrezka-tr-tooltip .hdr-tt-btn {
+  box-sizing: border-box;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--hdrtr-border);
+  color: var(--hdrtr-text-2);
+  border-radius: var(--hdrtr-pill);
+  cursor: pointer;
+  font-family: var(--hdrtr-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1;
+  transition: background var(--hdrtr-dur) var(--hdrtr-ease),
+              color var(--hdrtr-dur) var(--hdrtr-ease),
+              border-color var(--hdrtr-dur) var(--hdrtr-ease);
+}
+
+#hdrezka-tr-tooltip .hdr-tt-btn:hover {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+}
+
+#hdrezka-tr-tooltip .hdr-tt-btn[data-action="save"]:hover {
+  background: var(--hdrtr-accent-grad);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* Кнопка завантаження SRT */
+#hdrezka-tr-load-btn {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 2147483644;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--hdrtr-surface);
+  -webkit-backdrop-filter: var(--hdrtr-blur);
+  backdrop-filter: var(--hdrtr-blur);
+  color: var(--hdrtr-text);
+  border: 1px solid var(--hdrtr-border);
+  padding: 9px 15px;
+  border-radius: var(--hdrtr-pill);
+  cursor: pointer;
+  font-family: var(--hdrtr-font);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1;
+  box-shadow: var(--hdrtr-sh-1);
+  transition: transform var(--hdrtr-dur) var(--hdrtr-ease),
+              border-color var(--hdrtr-dur) var(--hdrtr-ease),
+              background var(--hdrtr-dur) var(--hdrtr-ease);
+}
+
+#hdrezka-tr-load-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--hdrtr-border-strong);
+  background: var(--hdrtr-surface-2);
+}
+
+#hdrezka-tr-load-btn.has-subs {
+  color: #d7fbe9;
+}
+
+#hdrezka-tr-load-btn.has-subs::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--hdrtr-success);
+  box-shadow: 0 0 8px var(--hdrtr-success);
+}
+
+/* Контроль зсуву (offset) */
+#hdrezka-tr-offset {
+  position: fixed;
+  top: 128px;
+  right: 20px;
+  z-index: 2147483644;
+  box-sizing: border-box;
+  background: var(--hdrtr-surface);
+  -webkit-backdrop-filter: var(--hdrtr-blur);
+  backdrop-filter: var(--hdrtr-blur);
+  color: var(--hdrtr-text-2);
+  border: 1px solid var(--hdrtr-border);
+  padding: 7px 12px;
+  border-radius: var(--hdrtr-pill);
+  box-shadow: var(--hdrtr-sh-1);
+  font-family: var(--hdrtr-font);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.4;
+  display: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity var(--hdrtr-dur) var(--hdrtr-ease),
+              transform var(--hdrtr-dur) var(--hdrtr-ease);
+}
+
+#hdrezka-tr-offset.visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* L-8: toast для помилок — заміна блокуючого alert() */
+#hdrezka-tr-toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483646;
+  box-sizing: border-box;
+  max-width: 360px;
+  background: rgba(60, 22, 30, .82);
+  -webkit-backdrop-filter: var(--hdrtr-blur);
+  backdrop-filter: var(--hdrtr-blur);
+  color: #ffe4e6;
+  padding: 10px 16px;
+  border-radius: var(--hdrtr-r-md);
+  border: 1px solid rgba(251, 113, 133, .4);
+  font-family: var(--hdrtr-font);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.4;
+  box-shadow: var(--hdrtr-sh-2);
+  display: none;
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+  transition: opacity var(--hdrtr-dur) var(--hdrtr-ease),
+              transform var(--hdrtr-dur) var(--hdrtr-ease);
+}
+
+#hdrezka-tr-toast.visible {
+  display: block;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* §2.3.B (CLAUDE_CODE_BRIEF_YT_FIXES.md): кнопка налаштувань у панелі
+   керування плеєра YouTube. class="ytp-button" дає розмір/поведінку під
+   нативний 48px-ряд контролів — тут лише центруємо власну SVG-іконку й не
+   ламаємо вигляд сусідніх кнопок (той самий white/opacity-паттерн, що й
+   нативні ytp-button). */
+.hdrtr-yt-settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  opacity: .9;
+  transition: opacity var(--hdrtr-dur) var(--hdrtr-ease);
+}
+
+.hdrtr-yt-settings-btn:hover {
+  opacity: 1;
+}
+
+.hdrtr-yt-settings-btn svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+/* Панель налаштувань (§2.3.A) — дзеркало полів popup.html, змонтована у
+   fullscreen-корінь так само, як tooltip (C-1, ui.js relocateFloatingUI). */
+#hdrezka-tr-settings {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 2147483646;
+  box-sizing: border-box;
+  width: 280px;
+  background: var(--hdrtr-surface);
+  -webkit-backdrop-filter: var(--hdrtr-blur);
+  backdrop-filter: var(--hdrtr-blur);
+  color: var(--hdrtr-text);
+  padding: 18px;
+  border-radius: var(--hdrtr-r-lg);
+  border: 1px solid var(--hdrtr-border);
+  box-shadow: var(--hdrtr-sh-2);
+  font-family: var(--hdrtr-font);
+  pointer-events: auto;
+  display: none;
+  opacity: 0;
+  transform: translateY(6px) scale(.98);
+  transition: opacity var(--hdrtr-dur) var(--hdrtr-ease),
+              transform var(--hdrtr-dur) var(--hdrtr-ease);
+}
+
+#hdrezka-tr-settings.visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+#hdrezka-tr-settings .hdrtr-settings-head {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--hdrtr-text);
+}
+
+#hdrezka-tr-settings label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--hdrtr-text-3);
+  margin: 12px 0 6px;
+}
+
+#hdrezka-tr-settings input,
+#hdrezka-tr-settings select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--hdrtr-border);
+  color: var(--hdrtr-text);
+  border-radius: var(--hdrtr-r-sm);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--hdrtr-dur), box-shadow var(--hdrtr-dur);
+}
+
+#hdrezka-tr-settings input:focus,
+#hdrezka-tr-settings select:focus {
+  border-color: var(--hdrtr-accent);
+  box-shadow: 0 0 0 3px var(--hdrtr-accent-ring);
+}
+
+#hdrezka-tr-settings button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  background: var(--hdrtr-accent-grad);
+  color: #fff;
+  border: none;
+  border-radius: var(--hdrtr-r-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  box-shadow: 0 6px 18px rgba(99, 102, 241, .4);
+  transition: transform var(--hdrtr-dur) var(--hdrtr-ease), filter var(--hdrtr-dur);
+}
+
+#hdrezka-tr-settings button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+#hdrezka-tr-settings #hdrtr-set-status {
+  margin-top: 8px;
+  font-size: 12px;
+  text-align: center;
+  min-height: 14px;
+}
+
+#hdrezka-tr-settings .ok { color: var(--hdrtr-success); }
+#hdrezka-tr-settings .err { color: var(--hdrtr-danger); }
+
+/* Видимий focus-ring для клавіатурної навігації */
+#hdrezka-tr-subs .hdr-word:focus-visible,
+#hdrezka-tr-tooltip .hdr-tt-btn:focus-visible,
+#hdrezka-tr-load-btn:focus-visible,
+.hdrtr-yt-settings-btn:focus-visible,
+#hdrezka-tr-settings input:focus-visible,
+#hdrezka-tr-settings select:focus-visible,
+#hdrezka-tr-settings button:focus-visible {
+  outline: 2px solid var(--hdrtr-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #hdrezka-tr-tooltip,
+  #hdrezka-tr-offset,
+  #hdrezka-tr-toast,
+  #hdrezka-tr-load-btn,
+  #hdrezka-tr-subs .hdr-word,
+  #hdrezka-tr-settings,
+  .hdrtr-yt-settings-btn {
+    transition: none !important;
+  }
+
+  #hdrezka-tr-tooltip.visible {
+    transform: none;
+  }
+
+  #hdrezka-tr-offset.visible {
+    transform: none;
+  }
+
+  #hdrezka-tr-toast.visible {
+    transform: translateX(-50%);
+  }
+
+  #hdrezka-tr-load-btn:hover,
+  #hdrezka-tr-settings button:hover {
+    transform: none;
+  }
+
+  #hdrezka-tr-settings.visible {
+    transform: none;
+  }
+}
+
+/* YouTube (D, CLAUDE_CODE_BRIEF_YOUTUBE.md §6.D): ховаємо рідні субтитри
+   YouTube, поки активний наш overlay, — щоб вони не дублювались. */
+html.hdrtr-yt-hide-native-captions .ytp-caption-window-container {
+  display: none !important;
+}

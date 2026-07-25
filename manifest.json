@@ -1,0 +1,67 @@
+{
+  "manifest_version": 3,
+  "name": "Subtitle Translator",
+  "version": "0.1.0",
+  "description": "Інтерактивні субтитри з AI-перекладом для YouTube",
+
+  "permissions": [
+    "storage",
+    "unlimitedStorage"
+  ],
+
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*"
+      ],
+      "exclude_matches": ["*://music.youtube.com/*"],
+      "js": [
+        "src/subtitleParser.js",
+        "src/youtubeCaptions.js",
+        "src/siteAdapters.js",
+        "src/core.js",
+        "src/i18n.js",
+        "src/settingsPanel.js",
+        "src/ui.js",
+        "src/subtitles.js",
+        "src/sync.js",
+        "src/interaction.js",
+        "src/translate.js",
+        "src/main.js"
+      ],
+      "css": ["overlay.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "exclude_matches": ["*://music.youtube.com/*"],
+      "js": ["src/ytBridge.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    }
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Subtitle Translator",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
