@@ -1,17 +1,14 @@
 # Stream Translate
 
-Інтерактивні субтитри з AI-перекладом (Google Gemini) для стрімінгових сервісів.
-Публічний білд: **YouTube** (Netflix та інші — далі).
+Interactive subtitles with AI-powered translation (Google Gemini) for streaming services.  
+Public build: **YouTube** (Netflix and other platforms coming later).
 
-## Можливості
-- Клік по слову — переклад слова; протягування — переклад фрази.
-- Автопідхоплення рідних субтитрів YouTube (ручні + авто/ASR), з резервним DOM-фолбеком.
-- Кнопка налаштувань прямо в плеєрі + popup. Ключ Gemini зберігається локально в браузері.
+## Features
+- Click a word to translate it; drag to translate a phrase.
+- Automatic detection of native YouTube subtitles (manual + auto-generated/ASR), with a DOM-based fallback.
+- Settings button directly in the player, plus a popup. The Gemini API key is stored locally in the browser.
 
-## Гілки
-- `develope` — робоча.
-- `main` — релізна (порожня до першого релізу).
+## Local Setup
+Open `chrome://extensions` → enable **Developer mode** → click **Load unpacked** → select this folder.
 
-## Локальний запуск
-`chrome://extensions` → увімкнути Developer mode → **Load unpacked** → ця папка.
-Вписати свій Gemini API-ключ у налаштуваннях розширення.
+Enter your Gemini API key in the extension settings.
