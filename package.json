@@ -1,0 +1,15 @@
+{
+  "name": "subtitle-translator",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Інтерактивні субтитри з AI-перекладом для стрімінгових сервісів",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node tests/run.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.0"
+  }
+}

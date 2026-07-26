@@ -15,3 +15,11 @@
 ## Локальний запуск
 `chrome://extensions` → увімкнути Developer mode → **Load unpacked** → ця папка.
 Вписати свій Gemini API-ключ у налаштуваннях розширення.
+
+## Розробка
+```
+npm install
+npm run build      # → dist/ (Load unpacked звідси теж працює)
+npm test           # node tests/run.js
+npm run typecheck  # tsc --noEmit
+```
