@@ -1,15 +1,30 @@
-// Юніт-тести для чистих функцій (subtitleParser.js, cacheKey.js).
-// Запуск: node tests/run.js
-// Без залежностей — лише вбудований Node (assert), без Jest/Mocha/збірки.
+// Юніт-тести для чистих функцій (subtitleParser.ts, cacheKey.ts, youtubeCaptions.ts).
+// Запуск: npm run build && node tests/run.js (або просто npm test — pretest
+// сам викликає build). Джерела — TypeScript з реальним export, тому Node
+// require()-ить не src/, а зібрані CJS-бандли з dist/test/ (build.mjs) —
+// без tsx чи інших рантайм-залежностей понад typescript/esbuild.
 
 'use strict';
 
 const assert = require('assert');
 const path = require('path');
 
-const { parseSRT, parseVTT, parseSubtitles, parseYouTubeJson3 } = require(path.join(__dirname, '..', 'src', 'subtitleParser.js'));
-const { hashString, buildCacheKey } = require(path.join(__dirname, '..', 'src', 'cacheKey.js'));
-const { LANGUAGE_CODE_MAP, buildCaptionCandidates, parseTimedtextBody, pollForMatchingTracks } = require(path.join(__dirname, '..', 'src', 'youtubeCaptions.js'));
+const DIST_TEST_DIR = path.join(__dirname, '..', 'dist', 'test');
+
+let subtitleParser, cacheKey, youtubeCaptions;
+try {
+  subtitleParser = require(path.join(DIST_TEST_DIR, 'subtitleParser.js'));
+  cacheKey = require(path.join(DIST_TEST_DIR, 'cacheKey.js'));
+  youtubeCaptions = require(path.join(DIST_TEST_DIR, 'youtubeCaptions.js'));
+} catch (err) {
+  console.error('Не вдалося завантажити зібрані модулі з dist/test/. Спочатку запусти: npm run build');
+  console.error(err.message);
+  process.exit(1);
+}
+
+const { parseSRT, parseVTT, parseSubtitles, parseYouTubeJson3 } = subtitleParser;
+const { hashString, buildCacheKey } = cacheKey;
+const { LANGUAGE_CODE_MAP, buildCaptionCandidates, parseTimedtextBody, pollForMatchingTracks } = youtubeCaptions;
 
 let passed = 0;
 let failed = 0;

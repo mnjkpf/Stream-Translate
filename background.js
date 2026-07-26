@@ -4,10 +4,10 @@
 // - кеш перекладів у chrome.storage.local
 // - збереження вивчених слів
 
-importScripts('src/cacheKey.js');
+import { buildCacheKey } from './src/cacheKey';
 
 const GEMINI_MODEL = 'gemini-2.0-flash'; // дефолт, якщо в popup не задано інший (M-6)
-const CACHE_PREFIX = 'tr:'; // tr:{mode}:{src}:{tgt}:{hash(context)}:{text_lowercase} — див. cacheKey.js
+const CACHE_PREFIX = 'tr:'; // tr:{mode}:{src}:{tgt}:{hash(context)}:{text_lowercase} — див. src/cacheKey.ts
 const WORDBOOK_MAX_ENTRIES = 2000; // M-2: ротація — старі записи витісняються новими
 const GEMINI_REQUEST_TIMEOUT_MS = 15000; // M-4: щоб tooltip не завис на "Перекладаю..." навічно
 
@@ -58,7 +58,7 @@ async function handleTranslate({ text, context, mode }) {
   const model = settings.model || GEMINI_MODEL; // M-6: модель налаштовується в popup
 
   // Перевіряємо кеш (ключ враховує mode і хеш контексту — H-1)
-  const cacheKey = CacheKeyUtil.buildCacheKey(CACHE_PREFIX, mode, sourceLang, targetLang, text, context);
+  const cacheKey = buildCacheKey(CACHE_PREFIX, mode, sourceLang, targetLang, text, context);
   const cached = await chrome.storage.local.get(cacheKey);
   if (cached[cacheKey]) {
     return { translation: cached[cacheKey], cached: true };

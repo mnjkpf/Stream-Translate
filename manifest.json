@@ -19,27 +19,14 @@
         "*://*.youtube.com/*"
       ],
       "exclude_matches": ["*://music.youtube.com/*"],
-      "js": [
-        "src/subtitleParser.js",
-        "src/youtubeCaptions.js",
-        "src/siteAdapters.js",
-        "src/core.js",
-        "src/i18n.js",
-        "src/settingsPanel.js",
-        "src/ui.js",
-        "src/subtitles.js",
-        "src/sync.js",
-        "src/interaction.js",
-        "src/translate.js",
-        "src/main.js"
-      ],
+      "js": ["content.js"],
       "css": ["overlay.css"],
       "run_at": "document_idle"
     },
     {
       "matches": ["*://*.youtube.com/*"],
       "exclude_matches": ["*://music.youtube.com/*"],
-      "js": ["src/ytBridge.js"],
+      "js": ["ytBridge.js"],
       "world": "MAIN",
       "run_at": "document_start"
     }

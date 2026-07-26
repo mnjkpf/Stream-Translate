@@ -13,13 +13,18 @@
 - `main` — релізна (порожня до першого релізу).
 
 ## Локальний запуск
-`chrome://extensions` → увімкнути Developer mode → **Load unpacked** → ця папка.
+Джерела — TypeScript, тому спочатку потрібна збірка (репозиторій напряму
+як unpacked-розширення вже не вантажиться):
+```
+npm install
+npm run build
+```
+Потім `chrome://extensions` → увімкнути Developer mode → **Load unpacked** → папка **`dist/`**.
 Вписати свій Gemini API-ключ у налаштуваннях розширення.
 
 ## Розробка
 ```
-npm install
-npm run build      # → dist/ (Load unpacked звідси теж працює)
-npm test           # node tests/run.js
+npm run build      # → dist/, готова до Load unpacked
+npm test           # build + node tests/run.js
 npm run typecheck  # tsc --noEmit
 ```
