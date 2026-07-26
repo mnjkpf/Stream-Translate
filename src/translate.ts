@@ -7,7 +7,7 @@ import { escapeHtml } from './utils';
 // самих причин: обидва боки використовують імпорт лише всередині функцій.
 import { clearSelection } from './interaction';
 
-export type TranslateMode = 'word' | 'phrase';
+export type TranslateMode = 'word' | 'phrase' | 'sentence';
 
 interface TranslatePosition {
   x: number;
@@ -74,8 +74,10 @@ export async function translateAndShow(
 
     if (mode === 'word') {
       renderWordTooltip(text, resp.translation || '', context, pos);
+    } else if (mode === 'sentence') {
+      renderLineTooltip(MESSAGES.sentenceLabel, text, resp.translation || '', pos);
     } else {
-      renderPhraseTooltip(text, resp.translation || '', pos);
+      renderLineTooltip(MESSAGES.phraseLabel, text, resp.translation || '', pos);
     }
   } catch (err) {
     if (requestId !== translateRequestId) return;
@@ -122,10 +124,12 @@ function renderWordTooltip(word: string, raw: string, context: string, anchorPos
   state.tooltip!.querySelector('[data-action="close"]')?.addEventListener('click', hideTooltip);
 }
 
-function renderPhraseTooltip(phrase: string, translation: string, anchorPos: TranslatePosition): void {
+// Спільний рендер для phrase/sentence — відрізняються лише міткою (label)
+// над текстом; обидва без кнопки "Зберегти" (це лише для word-режиму).
+function renderLineTooltip(label: string, text: string, translation: string, anchorPos: TranslatePosition): void {
   const html = `
-    <div class="subtr-tt-meta">${escapeHtml(MESSAGES.phraseLabel)}</div>
-    <div class="subtr-tt-word" style="font-size:13px; font-weight:400;">${escapeHtml(phrase)}</div>
+    <div class="subtr-tt-meta">${escapeHtml(label)}</div>
+    <div class="subtr-tt-word" style="font-size:13px; font-weight:400;">${escapeHtml(text)}</div>
     <div class="subtr-tt-translation" style="margin-top:8px;">${escapeHtml(translation)}</div>
     <div class="subtr-tt-actions">
       <button class="subtr-tt-btn" data-action="close">${escapeHtml(MESSAGES.close)}</button>

@@ -5,8 +5,8 @@
 // - збереження вивчених слів
 
 import { buildCacheKey } from './src/cacheKey';
+import { DEFAULT_MODEL } from './src/constants';
 
-const GEMINI_MODEL = 'gemini-2.0-flash'; // дефолт, якщо в popup не задано інший (M-6)
 const CACHE_PREFIX = 'tr:'; // tr:{mode}:{src}:{tgt}:{hash(context)}:{text_lowercase} — див. src/cacheKey.ts
 const WORDBOOK_MAX_ENTRIES = 2000; // M-2: ротація — старі записи витісняються новими
 const GEMINI_REQUEST_TIMEOUT_MS = 15000; // M-4: щоб tooltip не завис на "Перекладаю..." навічно
@@ -55,7 +55,7 @@ async function handleTranslate({ text, context, mode }) {
 
   const sourceLang = settings.sourceLang || 'English';
   const targetLang = settings.targetLang || 'Ukrainian';
-  const model = settings.model || GEMINI_MODEL; // M-6: модель налаштовується в popup
+  const model = settings.model || DEFAULT_MODEL; // M-6: модель налаштовується в popup
 
   // Перевіряємо кеш (ключ враховує mode і хеш контексту — H-1)
   const cacheKey = buildCacheKey(CACHE_PREFIX, mode, sourceLang, targetLang, text, context);
@@ -90,6 +90,16 @@ LEMMA: <base form of the word in ${sourceLang}>
 POS: <part of speech: noun/verb/adjective/adverb/etc>
 TRANSLATION: <1-3 ${targetLang} translations separated by commas, most relevant to context first>
 EXAMPLE: <a short ${sourceLang} example sentence using this word>`;
+  }
+
+  if (mode === 'sentence') {
+    return `You are translating a full subtitle line from a video.
+
+Subtitle: "${text}"
+
+Translate the whole subtitle to ${targetLang}, preserving tone and meaning naturally rather than word-for-word.
+
+Respond with ONLY the ${targetLang} translation, nothing else. No quotes, no explanations.`;
   }
 
   // mode === 'phrase'

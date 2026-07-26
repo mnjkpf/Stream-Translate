@@ -1,3 +1,5 @@
+import { DEFAULT_MODEL } from './src/constants';
+
 const els = {
   apiKey: document.getElementById('apiKey'),
   sourceLang: document.getElementById('sourceLang'),
@@ -12,7 +14,7 @@ chrome.storage.local.get(['apiKey', 'sourceLang', 'targetLang', 'model'], (data)
   if (data.apiKey) els.apiKey.value = data.apiKey;
   if (data.sourceLang) els.sourceLang.value = data.sourceLang;
   if (data.targetLang) els.targetLang.value = data.targetLang;
-  if (data.model) els.model.value = data.model;
+  els.model.value = data.model || DEFAULT_MODEL; // M-6: передзаповнюємо значенням, а не лише placeholder'ом
 });
 
 els.save.addEventListener('click', async () => {

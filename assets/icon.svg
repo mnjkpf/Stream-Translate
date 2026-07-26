@@ -1,0 +1,21 @@
+<svg width="128" height="128" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Тло: заокруглений квадрат, той самий indigo/violet градієнт, що й
+       в акцентних елементах UI (popup.html tr-accent-grad, overlay.css
+       subtr-accent-grad). -->
+  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
+
+  <!-- Гліф: рядок субтитрів (оригінал), потім шеврон, потім ширший
+       перекладений рядок. Другий рядок навмисно ширший за перший —
+       переклад рідко має точно ту саму довжину, що й оригінал. -->
+  <rect x="11" y="45" width="22" height="10" rx="5" fill="#ffffff"/>
+  <path d="M39 36 L55 50 L39 64" stroke="#ffffff" stroke-width="9"
+        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <rect x="59" y="45" width="30" height="10" rx="5" fill="#ffffff"/>
+</svg>

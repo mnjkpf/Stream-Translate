@@ -11,6 +11,7 @@
 import { adapter } from './activeAdapter';
 import { MESSAGES } from './i18n';
 import { relocateFloatingUI } from './ui';
+import { DEFAULT_MODEL } from './constants';
 
 const SETTINGS_BUTTON_ID = 'subtr-settings-btn';
 const SETTINGS_PANEL_ID = 'subtr-settings';
@@ -52,7 +53,7 @@ function buildPanel(): HTMLElement {
       <option value="English">Англійська</option>
     </select>
     <label for="subtr-set-model">Gemini модель</label>
-    <input type="text" id="subtr-set-model" placeholder="gemini-2.0-flash">
+    <input type="text" id="subtr-set-model" placeholder="gemini-2.5-flash">
     <button type="button" id="subtr-set-save">Зберегти</button>
     <div id="subtr-set-status"></div>
   `;
@@ -72,7 +73,7 @@ function buildPanel(): HTMLElement {
     if (data.apiKey) fields!.apiKey.value = data.apiKey;
     if (data.sourceLang) fields!.sourceLang.value = data.sourceLang;
     if (data.targetLang) fields!.targetLang.value = data.targetLang;
-    if (data.model) fields!.model.value = data.model;
+    fields!.model.value = data.model || DEFAULT_MODEL; // M-6: передзаповнюємо значенням, а не лише placeholder'ом
   });
 
   fields.save.addEventListener('click', async () => {

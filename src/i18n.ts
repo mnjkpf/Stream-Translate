@@ -16,6 +16,7 @@ export const MESSAGES = {
   saveWordDone: '✓ Збережено',
   close: 'Закрити',
   phraseLabel: 'Фраза:',
+  sentenceLabel: 'Рядок:',
   // YouTube: getSubtitleSource() — автозавантаження рідних субтитрів.
   // Розрізнення станів (siteAdapters.ts, fetchYouTubeCues): noCaptions —
   // після усіх повторів bridge не бачить жодного треку (субтитрів справді
