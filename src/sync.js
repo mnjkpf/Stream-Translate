@@ -1,9 +1,9 @@
-// HDRezka Subtitle Translator — синхронізація субтитрів з відео (timeupdate)
+// Subtitle Translator — синхронізація субтитрів з відео (timeupdate)
 
 (() => {
   'use strict';
 
-  const TR = window.__hdrezkaTr;
+  const TR = window.__subtr;
   if (!TR || !TR.adapter) return; // сайт не підтримується — модуль мовчить
 
   const { state } = TR;
@@ -46,7 +46,7 @@
 
     lines.forEach(line => {
       const lineEl = document.createElement('span');
-      lineEl.className = 'hdr-line';
+      lineEl.className = 'subtr-line';
 
       // Розбиваємо рядок на слова + пробіли/розділові
       // Регулярка ловить послідовності літер/цифр/апострофів як слова
@@ -57,7 +57,7 @@
         // Це слово якщо є хоча б одна літера
         if (/\p{L}/u.test(tok)) {
           const wordEl = document.createElement('span');
-          wordEl.className = 'hdr-word';
+          wordEl.className = 'subtr-word';
           wordEl.textContent = tok;
           wordEl.dataset.word = tok;
           // L-7: доступність — слово можна дійти Tab'ом і активувати з клавіатури

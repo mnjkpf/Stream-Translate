@@ -1,4 +1,4 @@
-// HDRezka Subtitle Translator — реєстр адаптерів сайтів
+// Subtitle Translator — реєстр адаптерів сайтів
 // Уся платформо-специфічна логіка (пошук відео, точка монтування, fullscreen-корінь)
 // живе тут. Решта коду (src/*.js, background.js) платформо-незалежна.
 //
@@ -32,14 +32,15 @@
   // YouTube
   // ═══════════════════════════════════════════════════════════
   // Джерело субтитрів — рідні треки YouTube (ручні + ASR), не ручний SRT
-  // (див. CLAUDE_CODE_BRIEF_YOUTUBE.md). Ключова відмінність від HDRezka:
-  // той самий <video> перевикористовується між роликами (SPA-навігація),
-  // тож потрібен окремий механізм детекту зміни ролика — observeNavigation().
+  // (див. CLAUDE_CODE_BRIEF_YOUTUBE.md). YouTube — SPA: той самий <video>
+  // перевикористовується між роликами (навігація без перезавантаження
+  // сторінки), тож потрібен окремий механізм детекту зміни ролика —
+  // observeNavigation().
 
-  const YT_BRIDGE_REQUEST_TYPE = 'hdrtr-yt-tracks-request';
-  const YT_BRIDGE_RESPONSE_TYPE = 'hdrtr-yt-tracks-response';
+  const YT_BRIDGE_REQUEST_TYPE = 'subtr-yt-tracks-request';
+  const YT_BRIDGE_RESPONSE_TYPE = 'subtr-yt-tracks-response';
   const YT_BRIDGE_TIMEOUT_MS = 4000;
-  const YT_HIDE_NATIVE_CLASS = 'hdrtr-yt-hide-native-captions';
+  const YT_HIDE_NATIVE_CLASS = 'subtr-yt-hide-native-captions';
   const YT_POLL_ATTEMPTS = 8; // §1.2.B: ~8×500мс ≈ 4-5с — покриває SPA-навігацію, поки плеєр не готовий
   const YT_POLL_DELAY_MS = 500;
 
@@ -58,7 +59,7 @@
       function onMessage(event) {
         if (event.source !== window) return;
         const data = event.data;
-        if (!data || data.source !== 'hdrtr-main' || data.type !== YT_BRIDGE_RESPONSE_TYPE) return;
+        if (!data || data.source !== 'subtr-main' || data.type !== YT_BRIDGE_RESPONSE_TYPE) return;
         if (data.requestId !== requestId) return;
         settle({ videoId: data.videoId || null, tracks: Array.isArray(data.tracks) ? data.tracks : [] });
       }
@@ -77,7 +78,7 @@
       timer = setTimeout(() => settle({ videoId: null, tracks: [] }), YT_BRIDGE_TIMEOUT_MS);
 
       window.postMessage(
-        { source: 'hdrtr-isolated', type: YT_BRIDGE_REQUEST_TYPE, requestId },
+        { source: 'subtr-isolated', type: YT_BRIDGE_REQUEST_TYPE, requestId },
         location.origin
       );
     });
@@ -94,25 +95,25 @@
     try {
       resp = await fetch(url, { credentials: 'include' });
     } catch (err) {
-      console.warn(`[HDRezka Translator] YouTube: timedtext fetch впав мережево для ${track.languageCode || '?'}`, err);
+      console.warn(`[Subtitle Translator] YouTube: timedtext fetch впав мережево для ${track.languageCode || '?'}`, err);
       return null;
     }
 
     if (!resp.ok) {
-      console.warn(`[HDRezka Translator] YouTube: timedtext HTTP ${resp.status} для ${track.languageCode || '?'}`);
+      console.warn(`[Subtitle Translator] YouTube: timedtext HTTP ${resp.status} для ${track.languageCode || '?'}`);
       return null;
     }
 
     const text = await resp.text();
     const json = parseTimedtextBody(text);
     if (json === null) {
-      console.warn(`[HDRezka Translator] YouTube: timedtext порожнє/не-JSON тіло для ${track.languageCode || '?'} (типово — потрібен pot-token)`);
+      console.warn(`[Subtitle Translator] YouTube: timedtext порожнє/не-JSON тіло для ${track.languageCode || '?'} (типово — потрібен pot-token)`);
       return null;
     }
 
     const cues = self.SubtitleParser.parseYouTubeJson3(json);
     if (cues.length === 0) {
-      console.warn(`[HDRezka Translator] YouTube: timedtext розпарсився без cues для ${track.languageCode || '?'}`);
+      console.warn(`[Subtitle Translator] YouTube: timedtext розпарсився без cues для ${track.languageCode || '?'}`);
       return null;
     }
 
@@ -128,7 +129,7 @@
     );
 
     if (tracks.length === 0) {
-      console.warn('[HDRezka Translator] YouTube: після усіх повторів треків не знайдено (videoId не збігається або субтитрів справді немає)');
+      console.warn('[Subtitle Translator] YouTube: після усіх повторів треків не знайдено (videoId не збігається або субтитрів справді немає)');
       return { cues: [], state: 'noCaptions', languageCode: null, isFallbackLanguage: false, isAsr: false };
     }
 
@@ -152,7 +153,7 @@
       }
     }
 
-    console.warn('[HDRezka Translator] YouTube: усі кандидати треків дали порожньо/помилку — timedtext, ймовірно, вимагає pot-token');
+    console.warn('[Subtitle Translator] YouTube: усі кандидати треків дали порожньо/помилку — timedtext, ймовірно, вимагає pot-token');
     return { cues: [], state: 'loadFailed', languageCode: null, isFallbackLanguage: false, isAsr: false };
   }
 
@@ -173,7 +174,7 @@
 
     const container = document.querySelector('.ytp-caption-window-container');
     if (!container) {
-      console.warn('[HDRezka Translator] YouTube: Рівень 3 недоступний — немає .ytp-caption-window-container');
+      console.warn('[Subtitle Translator] YouTube: Рівень 3 недоступний — немає .ytp-caption-window-container');
       return null;
     }
 
@@ -191,7 +192,7 @@
     obs.observe(container, { childList: true, subtree: true, characterData: true });
     readLine();
 
-    console.warn('[HDRezka Translator] YouTube: увімкнено Рівень 3 (DOM-скрейпінг живих субтитрів) — timedtext не віддав валідних cues');
+    console.warn('[Subtitle Translator] YouTube: увімкнено Рівень 3 (DOM-скрейпінг живих субтитрів) — timedtext не віддав валідних cues');
     return () => obs.disconnect();
   }
 
@@ -264,7 +265,7 @@
       document.documentElement.classList.remove(YT_HIDE_NATIVE_CLASS);
     },
 
-    // Рівень 3 (§1.2.C) — опційний хук, HDRezka його не має.
+    // Рівень 3 (§1.2.C) — опційний хук; інші сайти можуть його не реалізовувати.
     startCaptionFallback(onLineChange) {
       return startDomCaptionFallback(onLineChange);
     },
@@ -276,7 +277,7 @@
       const rightControls = document.querySelector('.ytp-right-controls');
       if (!rightControls) return false;
 
-      buttonEl.classList.add('ytp-button', 'hdrtr-yt-settings-btn');
+      buttonEl.classList.add('ytp-button', 'subtr-yt-settings-btn');
 
       try {
         const settingsBtn = rightControls.querySelector('.ytp-settings-button');
@@ -301,5 +302,5 @@
   // ═══════════════════════════════════════════════════════════
   // Реєстр активних адаптерів. Щоб додати сервіс (Netflix тощо) — новий
   // об'єкт з тим самим інтерфейсом + відповідний matches у manifest.json.
-  window.__hdrezkaTrAdapters = [YouTubeAdapter];
+  window.__subtrAdapters = [YouTubeAdapter];
 })();

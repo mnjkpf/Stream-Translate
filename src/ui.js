@@ -1,10 +1,10 @@
-// HDRezka Subtitle Translator — DOM-елементи overlay (кнопка, індикатор, toast)
+// Subtitle Translator — DOM-елементи overlay (кнопка, індикатор, toast)
 // і fullscreen-релокейт (C-1).
 
 (() => {
   'use strict';
 
-  const TR = window.__hdrezkaTr;
+  const TR = window.__subtr;
   if (!TR || !TR.adapter) return; // сайт не підтримується — модуль мовчить
 
   const { adapter, state, MESSAGES } = TR;
@@ -16,12 +16,12 @@
   TR.createUI = function createUI() {
     // Контейнер субтитрів — кладемо в батька <video>
     state.container = document.createElement('div');
-    state.container.id = 'hdrezka-tr-subs';
+    state.container.id = 'subtr-subs';
     state.container.style.display = 'none';
 
     // Tooltip для перекладу
     state.tooltip = document.createElement('div');
-    state.tooltip.id = 'hdrezka-tr-tooltip';
+    state.tooltip.id = 'subtr-tooltip';
     // L-7: доступність — оголошуємо як діалог з переклад, зміст читається вголос
     state.tooltip.setAttribute('role', 'dialog');
     state.tooltip.setAttribute('aria-live', 'polite');
@@ -30,7 +30,7 @@
 
     // Кнопка завантаження SRT
     state.loadBtn = document.createElement('button');
-    state.loadBtn.id = 'hdrezka-tr-load-btn';
+    state.loadBtn.id = 'subtr-load-btn';
     state.loadBtn.textContent = MESSAGES.loadButtonIdle;
     document.body.appendChild(state.loadBtn);
 
@@ -70,12 +70,12 @@
 
     // Індикатор зсуву
     state.offsetIndicator = document.createElement('div');
-    state.offsetIndicator.id = 'hdrezka-tr-offset';
+    state.offsetIndicator.id = 'subtr-offset';
     document.body.appendChild(state.offsetIndicator);
 
     // L-8: toast для помилок замість блокуючого alert()
     state.toast = document.createElement('div');
-    state.toast.id = 'hdrezka-tr-toast';
+    state.toast.id = 'subtr-toast';
     state.toast.setAttribute('role', 'alert');
     document.body.appendChild(state.toast);
 
@@ -86,7 +86,7 @@
       if (state.cues.length === 0) return;
 
       // L-6: preventDefault — інакше ці клавіші можуть дублюватись
-      // гарячими клавішами самого плеєра HDRezka
+      // гарячими клавішами самого відеоплеєра
       if (e.key === '[') {
         e.preventDefault();
         state.offset -= 0.5;

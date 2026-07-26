@@ -1,11 +1,11 @@
-// HDRezka Subtitle Translator — оркестрація: init() і переприв'язка при
+// Subtitle Translator — оркестрація: init() і переприв'язка при
 // перерендері плеєра (H-3). Останній файл у ланцюжку — усі означення з
 // інших модулів мають бути на місці до виклику init().
 
 (() => {
   'use strict';
 
-  const TR = window.__hdrezkaTr;
+  const TR = window.__subtr;
   if (!TR || !TR.adapter) return; // сайт не підтримується — модуль мовчить
   if (TR.booted) return; // подвійна ін'єкція: init() вже викликався раніше
 
@@ -13,14 +13,14 @@
 
   // ═══════════════════════════════════════════════════════════
   // ПЕРЕПРИВ'ЯЗКА ПРИ ПЕРЕРЕНДЕРІ ПЛЕЄРА (H-3)
-  // Спостерігаємо document.body, бо HDRezka може перебудувати плеєр де
+  // Спостерігаємо document.body, бо сайт може перебудувати плеєр де
   // завгодно в дереві. Але без фільтра observer тригерить сам себе: наш
   // власний renderCue()/showTooltip() переписують innerHTML контейнера й
   // tooltip на кожен cue. Ігноруємо мутації всередині наших елементів і
   // об'єднуємо решту через debounce, щоб не ганяти findVideo() на кожен
   // дрібний DOM-чанк.
   // ═══════════════════════════════════════════════════════════
-  const OWN_ROOTS_SELECTOR = '#hdrezka-tr-subs, #hdrezka-tr-tooltip, #hdrezka-tr-settings, #hdrezka-tr-settings-btn';
+  const OWN_ROOTS_SELECTOR = '#subtr-subs, #subtr-tooltip, #subtr-settings, #subtr-settings-btn';
   const REATTACH_DEBOUNCE_MS = 250;
 
   function isOwnMutation(mutations) {
@@ -57,7 +57,7 @@
 
     // C: якщо адаптер сам постачає субтитри (YouTube) — вантажимо їх одразу
     // й перезавантажуємо на кожну зміну ролика (§5: SPA-навігація,
-    // observeNavigation — платформо-специфічний хук, для HDRezka не реалізований)
+    // observeNavigation — платформо-специфічний хук, реалізований не для всіх сайтів)
     const subtitleSource = adapter.getSubtitleSource();
     if (subtitleSource) {
       TR.loadCuesFromSource(subtitleSource);
@@ -79,5 +79,5 @@
   }
 
   TR.booted = true;
-  init().catch(err => console.error('[HDRezka Translator] Init error:', err));
+  init().catch(err => console.error('[Subtitle Translator] Init error:', err));
 })();

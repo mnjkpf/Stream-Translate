@@ -1,7 +1,7 @@
-// HDRezka Subtitle Translator — спільний namespace для content-script модулів
+// Subtitle Translator — спільний namespace для content-script модулів
 // Класичні скрипти (без збірки, без ES-модулів) не мають гарантованої спільної
 // лексичної області між файлами, тож увесь спільний стан і утиліти живуть
-// на window.__hdrezkaTr (TR), а не в замиканні окремого файлу.
+// на window.__subtr (TR), а не в замиканні окремого файлу.
 
 (() => {
   'use strict';
@@ -10,14 +10,14 @@
   // Модулі, що йдуть після (ui.js, subtitles.js, ...), не перевіряють booted —
   // вони лише перевизначають функції на TR, що безпечно повторити. Побічні
   // ефекти (виклик init()) стримує сам main.js окремою перевіркою TR.booted.
-  if (window.__hdrezkaTr && window.__hdrezkaTr.booted) return;
+  if (window.__subtr && window.__subtr.booted) return;
 
-  const TR = (window.__hdrezkaTr = window.__hdrezkaTr || {});
+  const TR = (window.__subtr = window.__subtr || {});
 
   // ═══════════════════════════════════════════════════════════
   // АДАПТЕР САЙТУ (siteAdapters.js) — уся платформо-специфічна логіка
   // ═══════════════════════════════════════════════════════════
-  TR.adapter = (window.__hdrezkaTrAdapters || []).find(a => a.matchesHost(location.host));
+  TR.adapter = (window.__subtrAdapters || []).find(a => a.matchesHost(location.host));
 
   // ═══════════════════════════════════════════════════════════
   // СТАН

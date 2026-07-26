@@ -1,8 +1,8 @@
-// HDRezka Subtitle Translator — in-page панель налаштувань + кнопка в плеєрі
+// Subtitle Translator — in-page панель налаштувань + кнопка в плеєрі
 // (§2, CLAUDE_CODE_BRIEF_YT_FIXES.md). Платформо-незалежний модуль: кнопку й
 // панель створює content-script, місце вставки кнопки в UI плеєра делегує
-// адаптеру сайту через опційний хук adapter.placeSettingsButton() — HDRezka
-// його не реалізує, тож кнопки в плеєрі там немає, лишається popup.
+// адаптеру сайту через опційний хук adapter.placeSettingsButton() — якщо
+// адаптер його не реалізує, кнопки в плеєрі немає, лишається popup.
 //
 // Панель — дзеркало полів popup.html: пише в ті самі ключі chrome.storage.local
 // (apiKey, sourceLang, targetLang, model), тому налаштування, збережені тут
@@ -11,13 +11,13 @@
 (() => {
   'use strict';
 
-  const TR = window.__hdrezkaTr;
+  const TR = window.__subtr;
   if (!TR || !TR.adapter) return; // сайт не підтримується — модуль мовчить
 
   const { adapter, MESSAGES } = TR;
 
-  const SETTINGS_BUTTON_ID = 'hdrezka-tr-settings-btn';
-  const SETTINGS_PANEL_ID = 'hdrezka-tr-settings';
+  const SETTINGS_BUTTON_ID = 'subtr-settings-btn';
+  const SETTINGS_PANEL_ID = 'subtr-settings';
 
   let panelEl = null;
   let fields = null;
@@ -29,38 +29,38 @@
     panel.setAttribute('aria-label', MESSAGES.settingsPanelAriaLabel);
 
     panel.innerHTML = `
-      <div class="hdrtr-settings-head">Subtitle Translator</div>
-      <label for="hdrtr-set-apiKey">Gemini API Key</label>
-      <input type="password" id="hdrtr-set-apiKey" autocomplete="off" placeholder="AIza...">
-      <label for="hdrtr-set-sourceLang">Мова субтитрів</label>
-      <select id="hdrtr-set-sourceLang">
+      <div class="subtr-settings-head">Subtitle Translator</div>
+      <label for="subtr-set-apiKey">Gemini API Key</label>
+      <input type="password" id="subtr-set-apiKey" autocomplete="off" placeholder="AIza...">
+      <label for="subtr-set-sourceLang">Мова субтитрів</label>
+      <select id="subtr-set-sourceLang">
         <option value="English">English</option>
         <option value="Russian">Російська</option>
         <option value="Spanish">Іспанська</option>
         <option value="French">Французька</option>
         <option value="German">Німецька</option>
       </select>
-      <label for="hdrtr-set-targetLang">Перекладати на</label>
-      <select id="hdrtr-set-targetLang">
+      <label for="subtr-set-targetLang">Перекладати на</label>
+      <select id="subtr-set-targetLang">
         <option value="Ukrainian">Українська</option>
         <option value="Russian">Російська</option>
         <option value="English">Англійська</option>
       </select>
-      <label for="hdrtr-set-model">Gemini модель</label>
-      <input type="text" id="hdrtr-set-model" placeholder="gemini-2.0-flash">
-      <button type="button" id="hdrtr-set-save">Зберегти</button>
-      <div id="hdrtr-set-status"></div>
+      <label for="subtr-set-model">Gemini модель</label>
+      <input type="text" id="subtr-set-model" placeholder="gemini-2.0-flash">
+      <button type="button" id="subtr-set-save">Зберегти</button>
+      <div id="subtr-set-status"></div>
     `;
 
     document.body.appendChild(panel);
 
     fields = {
-      apiKey: panel.querySelector('#hdrtr-set-apiKey'),
-      sourceLang: panel.querySelector('#hdrtr-set-sourceLang'),
-      targetLang: panel.querySelector('#hdrtr-set-targetLang'),
-      model: panel.querySelector('#hdrtr-set-model'),
-      save: panel.querySelector('#hdrtr-set-save'),
-      status: panel.querySelector('#hdrtr-set-status')
+      apiKey: panel.querySelector('#subtr-set-apiKey'),
+      sourceLang: panel.querySelector('#subtr-set-sourceLang'),
+      targetLang: panel.querySelector('#subtr-set-targetLang'),
+      model: panel.querySelector('#subtr-set-model'),
+      save: panel.querySelector('#subtr-set-save'),
+      status: panel.querySelector('#subtr-set-status')
     };
 
     chrome.storage.local.get(['apiKey', 'sourceLang', 'targetLang', 'model'], (data) => {
@@ -154,7 +154,7 @@
   // §2.3.C: YouTube перебудовує панель керування — перевіряємо наявність і
   // за потреби переінжектимо ідемпотентно (без дублікатів за id).
   TR.ensureSettingsButton = function ensureSettingsButton() {
-    if (!adapter.placeSettingsButton) return; // HDRezka: хук не реалізовано — кнопки в плеєрі нема
+    if (!adapter.placeSettingsButton) return; // хук не реалізовано адаптером — кнопки в плеєрі нема
     if (document.getElementById(SETTINGS_BUTTON_ID)) return; // вже вставлена
 
     // Кнопка в плеєрі — НЕкритична фіча. Її збій не має валити init() у main.js
@@ -163,7 +163,7 @@
     try {
       adapter.placeSettingsButton(createSettingsButton());
     } catch (err) {
-      console.warn('[HDRezka Translator] settings button placement failed:', err);
+      console.warn('[Subtitle Translator] settings button placement failed:', err);
     }
   };
 })();

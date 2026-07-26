@@ -1,9 +1,9 @@
-// HDRezka Subtitle Translator — взаємодія з субтитрами (клік / виділення фрази)
+// Subtitle Translator — взаємодія з субтитрами (клік / виділення фрази)
 
 (() => {
   'use strict';
 
-  const TR = window.__hdrezkaTr;
+  const TR = window.__subtr;
   if (!TR || !TR.adapter) return; // сайт не підтримується — модуль мовчить
 
   const { state } = TR;
@@ -12,7 +12,7 @@
     let mouseDownWord = null;
 
     state.container.addEventListener('mousedown', (e) => {
-      const word = e.target.closest('.hdr-word');
+      const word = e.target.closest('.subtr-word');
       if (!word) return;
       mouseDownWord = word;
       state.selecting = false;
@@ -31,7 +31,7 @@
 
     state.container.addEventListener('mousemove', (e) => {
       if (!mouseDownWord) return;
-      const word = e.target.closest('.hdr-word');
+      const word = e.target.closest('.subtr-word');
       if (word && word !== mouseDownWord) {
         state.selecting = true;
         highlightRange(mouseDownWord, word);
@@ -40,7 +40,7 @@
 
     state.container.addEventListener('mouseup', (e) => {
       if (!mouseDownWord) return;
-      const word = e.target.closest('.hdr-word');
+      const word = e.target.closest('.subtr-word');
 
       if (state.selecting && word) {
         // Виділена фраза
@@ -61,7 +61,7 @@
     // той самий переклад, що й по кліку, але без позиції курсора миші
     state.container.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
-      const word = e.target.closest('.hdr-word');
+      const word = e.target.closest('.subtr-word');
       if (!word) return;
       e.preventDefault();
       if (state.video && !state.video.paused) {
@@ -74,24 +74,24 @@
     // Закрити tooltip при кліку поза ним
     document.addEventListener('mousedown', (e) => {
       if (state.tooltip.contains(e.target)) return;
-      if (e.target.closest('.hdr-word')) return;
+      if (e.target.closest('.subtr-word')) return;
       TR.hideTooltip();
     });
   };
 
   function highlightRange(from, to) {
-    const words = [...state.container.querySelectorAll('.hdr-word')];
+    const words = [...state.container.querySelectorAll('.subtr-word')];
     const i1 = words.indexOf(from);
     const i2 = words.indexOf(to);
     const [start, end] = i1 < i2 ? [i1, i2] : [i2, i1];
 
     words.forEach((w, i) => {
-      w.classList.toggle('hdr-selected', i >= start && i <= end);
+      w.classList.toggle('subtr-selected', i >= start && i <= end);
     });
   }
 
   function getSelectedText() {
-    const selected = state.container.querySelectorAll('.hdr-word.hdr-selected');
+    const selected = state.container.querySelectorAll('.subtr-word.subtr-selected');
     if (selected.length === 0) return '';
 
     // Збираємо текст з пробілами між словами
@@ -99,8 +99,8 @@
   }
 
   TR.clearSelection = function clearSelection() {
-    state.container.querySelectorAll('.hdr-selected').forEach(w => {
-      w.classList.remove('hdr-selected');
+    state.container.querySelectorAll('.subtr-selected').forEach(w => {
+      w.classList.remove('subtr-selected');
     });
   };
 })();

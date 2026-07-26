@@ -1,10 +1,10 @@
-// HDRezka Subtitle Translator — UI-рядки
+// Subtitle Translator — UI-рядки
 // L-10: одне місце для всіх текстів — мінімум для майбутньої локалізації
 
 (() => {
   'use strict';
 
-  const TR = window.__hdrezkaTr;
+  const TR = window.__subtr;
   if (!TR || !TR.adapter) return; // сайт не підтримується — модуль мовчить
 
   TR.MESSAGES = {

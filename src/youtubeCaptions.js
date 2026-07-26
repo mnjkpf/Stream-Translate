@@ -1,4 +1,4 @@
-// HDRezka Subtitle Translator — чиста логіка вибору/парсингу YouTube-субтитрів
+// Subtitle Translator — чиста логіка вибору/парсингу YouTube-субтитрів
 // Винесено з src/siteAdapters.js, щоб покрити тестами (tests/run.js) без
 // DOM/chrome.* — той самий дуальний експорт, що й subtitleParser.js/cacheKey.js:
 //   1) як звичайний content-script — результат висить на self.YouTubeCaptions;

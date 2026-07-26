@@ -1,4 +1,4 @@
-// HDRezka Subtitle Translator — парсер субтитрів (SRT/VTT)
+// Subtitle Translator — парсер субтитрів (SRT/VTT)
 // Чиста логіка без DOM/chrome.* API, тому файл підключається двома способами:
 //   1) як звичайний content-script (manifest.json → js) — тоді результат
 //      висить на self.SubtitleParser;

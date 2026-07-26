@@ -1,4 +1,4 @@
-// HDRezka Subtitle Translator — MAIN-world міст для YouTube
+// Subtitle Translator — MAIN-world міст для YouTube
 // Виконується в контексті сторінки (world: MAIN), тому має доступ до
 // window.ytInitialPlayerResponse і #movie_player.getPlayerResponse(),
 // на відміну від основного набору content-скриптів (ISOLATED world, src/*.js).
@@ -7,8 +7,8 @@
 (() => {
   'use strict';
 
-  const REQUEST_TYPE = 'hdrtr-yt-tracks-request';
-  const RESPONSE_TYPE = 'hdrtr-yt-tracks-response';
+  const REQUEST_TYPE = 'subtr-yt-tracks-request';
+  const RESPONSE_TYPE = 'subtr-yt-tracks-response';
 
   // ?v= (звичайне відео) чи /shorts/<id> з поточного URL — щоб перевірити,
   // що ytInitialPlayerResponse не застарів (§1.2.A: він лишається відповіддю
@@ -71,12 +71,12 @@
     // сторонніх фреймів) з нашим власним типом повідомлення
     if (event.source !== window) return;
     const data = event.data;
-    if (!data || data.source !== 'hdrtr-isolated' || data.type !== REQUEST_TYPE) return;
+    if (!data || data.source !== 'subtr-isolated' || data.type !== REQUEST_TYPE) return;
 
     const { videoId, tracks } = getCaptionData();
 
     window.postMessage({
-      source: 'hdrtr-main',
+      source: 'subtr-main',
       type: RESPONSE_TYPE,
       requestId: data.requestId,
       videoId,

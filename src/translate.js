@@ -1,9 +1,9 @@
-// HDRezka Subtitle Translator — переклад слова/фрази і tooltip
+// Subtitle Translator — переклад слова/фрази і tooltip
 
 (() => {
   'use strict';
 
-  const TR = window.__hdrezkaTr;
+  const TR = window.__subtr;
   if (!TR || !TR.adapter) return; // сайт не підтримується — модуль мовчить
 
   const { state, MESSAGES, escapeHtml } = TR;
@@ -35,7 +35,7 @@
       state.pausedByTooltip = true;
     }
 
-    showTooltip(pos, `<div class="hdr-tt-loading">${escapeHtml(MESSAGES.translating)}</div>`);
+    showTooltip(pos, `<div class="subtr-tt-loading">${escapeHtml(MESSAGES.translating)}</div>`);
 
     const context = state.currentCue ? state.currentCue.text.replace(/\n/g, ' ') : text;
 
@@ -52,7 +52,7 @@
       if (requestId !== translateRequestId) return;
 
       if (resp.error) {
-        showTooltip(pos, `<div class="hdr-tt-error">${escapeHtml(resp.error)}</div>`);
+        showTooltip(pos, `<div class="subtr-tt-error">${escapeHtml(resp.error)}</div>`);
         return;
       }
 
@@ -63,7 +63,7 @@
       }
     } catch (err) {
       if (requestId !== translateRequestId) return;
-      showTooltip(pos, `<div class="hdr-tt-error">${escapeHtml(err.message)}</div>`);
+      showTooltip(pos, `<div class="subtr-tt-error">${escapeHtml(err.message)}</div>`);
     }
   };
 
@@ -81,13 +81,13 @@
     const example = fields.EXAMPLE || '';
 
     const html = `
-      <div class="hdr-tt-word">${escapeHtml(lemma)}</div>
-      ${pos ? `<div class="hdr-tt-meta">${escapeHtml(pos)}</div>` : ''}
-      <div class="hdr-tt-translation">${escapeHtml(translation)}</div>
-      ${example ? `<div class="hdr-tt-example">${escapeHtml(example)}</div>` : ''}
-      <div class="hdr-tt-actions">
-        <button class="hdr-tt-btn" data-action="save">${escapeHtml(MESSAGES.saveWord)}</button>
-        <button class="hdr-tt-btn" data-action="close">${escapeHtml(MESSAGES.close)}</button>
+      <div class="subtr-tt-word">${escapeHtml(lemma)}</div>
+      ${pos ? `<div class="subtr-tt-meta">${escapeHtml(pos)}</div>` : ''}
+      <div class="subtr-tt-translation">${escapeHtml(translation)}</div>
+      ${example ? `<div class="subtr-tt-example">${escapeHtml(example)}</div>` : ''}
+      <div class="subtr-tt-actions">
+        <button class="subtr-tt-btn" data-action="save">${escapeHtml(MESSAGES.saveWord)}</button>
+        <button class="subtr-tt-btn" data-action="close">${escapeHtml(MESSAGES.close)}</button>
       </div>
     `;
     showTooltip(anchorPos, html);
@@ -108,11 +108,11 @@
 
   function renderPhraseTooltip(phrase, translation, anchorPos) {
     const html = `
-      <div class="hdr-tt-meta">${escapeHtml(MESSAGES.phraseLabel)}</div>
-      <div class="hdr-tt-word" style="font-size:13px; font-weight:400;">${escapeHtml(phrase)}</div>
-      <div class="hdr-tt-translation" style="margin-top:8px;">${escapeHtml(translation)}</div>
-      <div class="hdr-tt-actions">
-        <button class="hdr-tt-btn" data-action="close">${escapeHtml(MESSAGES.close)}</button>
+      <div class="subtr-tt-meta">${escapeHtml(MESSAGES.phraseLabel)}</div>
+      <div class="subtr-tt-word" style="font-size:13px; font-weight:400;">${escapeHtml(phrase)}</div>
+      <div class="subtr-tt-translation" style="margin-top:8px;">${escapeHtml(translation)}</div>
+      <div class="subtr-tt-actions">
+        <button class="subtr-tt-btn" data-action="close">${escapeHtml(MESSAGES.close)}</button>
       </div>
     `;
     showTooltip(anchorPos, html);

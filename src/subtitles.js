@@ -1,11 +1,11 @@
-// HDRezka Subtitle Translator — пошук відео, завантаження і прив'язка субтитрів
+// Subtitle Translator — пошук відео, завантаження і прив'язка субтитрів
 // Ручне завантаження SRT/VTT (readFileSmart) і авто-завантаження з адаптера
 // (loadCuesFromSource, C: YouTube тощо) — обидва шляхи ведуть до attachToVideo.
 
 (() => {
   'use strict';
 
-  const TR = window.__hdrezkaTr;
+  const TR = window.__subtr;
   if (!TR || !TR.adapter) return; // сайт не підтримується — модуль мовчить
 
   const { adapter, state, MESSAGES } = TR;
@@ -133,8 +133,8 @@
 
   // ═══════════════════════════════════════════════════════════
   // АВТОЗАВАНТАЖЕННЯ СУБТИТРІВ З АДАПТЕРА (getSubtitleSource(), C, YouTube)
-  // Для HDRezka getSubtitleSource() === null — цей блок узагалі не викликається,
-  // і поведінка лишається такою, як була (кнопка + ручний SRT).
+  // Якщо адаптер сайту не постачає субтитри сам (getSubtitleSource() === null) —
+  // цей блок узагалі не викликається, лишається кнопка + ручне завантаження SRT.
   // ═══════════════════════════════════════════════════════════
   let subtitleLoadRequestId = 0; // та сама ідея, що й L-5 для перекладу
 
@@ -146,7 +146,7 @@
     try {
       result = await source.fetchCues();
     } catch (err) {
-      console.error('[HDRezka Translator] fetchCues error:', err);
+      console.error('[Subtitle Translator] fetchCues error:', err);
       // Застаріла відповідь (користувач уже перемкнув відео) — не показуємо
       // помилку/не чіпаємо cues нового відео
       if (requestId !== subtitleLoadRequestId) return;

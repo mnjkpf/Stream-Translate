@@ -1,4 +1,4 @@
-// HDRezka Subtitle Translator — побудова ключа кешу перекладів
+// Subtitle Translator — побудова ключа кешу перекладів
 // Той самий UMD-шаблон, що й subtitleParser.js: підключається в background.js
 // через importScripts('src/cacheKey.js') і require()-иться з Node у юніт-тестах
 // (tests/run.js), без бандлера.
