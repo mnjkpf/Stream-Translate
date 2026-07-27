@@ -4,3 +4,4 @@ dist/
 *_REPORT*.md
 config.local.*
 .DS_Store
+BACKEND_ARCHITECTURE.md
