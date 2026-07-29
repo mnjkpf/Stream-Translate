@@ -1,4 +1,4 @@
-package com.streamtranslate.backend.auth;
+package com.streamtranslate.backend.auth.google;
 
 import java.util.List;
 import java.util.Set;

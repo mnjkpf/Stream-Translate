@@ -1,4 +1,4 @@
-package com.streamtranslate.backend.auth;
+package com.streamtranslate.backend.auth.google;
 
 // Дані, які GoogleTokenVerifier дістає з валідного Google ID-токена.
 // Використовується контролером /auth/google: за googleSub шукаємо/створюємо Users,
