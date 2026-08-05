@@ -2,7 +2,7 @@
 // перерендері плеєра (H-3). Єдина точка входу content-script бандла —
 // esbuild (build.mjs) резолвить увесь граф import/export звідси.
 
-import { adapter, isSiteSupported } from './activeAdapter';
+import { adapter, isSiteSupported } from './adapters/activeAdapter';
 import { state } from './state';
 import {
   waitForVideo,
@@ -10,11 +10,11 @@ import {
   resetSubtitleState,
   handleVideoChanged,
   loadCuesFromSource
-} from './subtitles';
-import { createUI, relocateFloatingUI } from './ui';
-import { setupInteraction } from './interaction';
-import { onTimeUpdate } from './sync';
-import { ensureSettingsButton } from './settingsPanel';
+} from './subtitles/subtitles';
+import { createUI, relocateFloatingUI } from './overlay/ui';
+import { setupInteraction } from './overlay/interaction';
+import { onTimeUpdate } from './subtitles/sync';
+import { ensureSettingsButton } from './overlay/settingsPanel';
 
 declare global {
   interface Window {

@@ -8,7 +8,7 @@
 // (напр. netflixAdapter.ts) і додати його в SITE_ADAPTERS (siteAdapters.ts)
 // та у content_scripts.matches у manifest.json.
 
-import type { Cue } from './subtitleParser';
+import type { Cue } from '../subtitles/subtitleParser';
 
 export interface SubtitleFetchResult {
   cues: Cue[];

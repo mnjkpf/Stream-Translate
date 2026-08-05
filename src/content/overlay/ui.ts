@@ -1,11 +1,11 @@
 // Subtitle Translator — DOM-елементи overlay (кнопка, індикатор, toast)
 // і fullscreen-релокейт (C-1).
 
-import { adapter } from './activeAdapter';
-import { state } from './state';
-import { MESSAGES } from './i18n';
-import { parseSubtitles } from './subtitleParser';
-import { readFileSmart, attachToVideo } from './subtitles';
+import { adapter } from '../adapters/activeAdapter';
+import { state } from '../state';
+import { MESSAGES } from '../../shared/i18n';
+import { parseSubtitles } from '../subtitles/subtitleParser';
+import { readFileSmart, attachToVideo } from '../subtitles/subtitles';
 import { getSettingsPanelEl } from './settingsPanel';
 
 // ═══════════════════════════════════════════════════════════

@@ -2,12 +2,12 @@
 // Ручне завантаження SRT/VTT (readFileSmart) і авто-завантаження з адаптера
 // (loadCuesFromSource, C: YouTube тощо) — обидва шляхи ведуть до attachToVideo.
 
-import { adapter } from './activeAdapter';
-import { state } from './state';
-import { MESSAGES } from './i18n';
-import { showToast } from './ui';
+import { adapter } from '../adapters/activeAdapter';
+import { state } from '../state';
+import { MESSAGES } from '../../shared/i18n';
+import { showToast } from '../overlay/ui';
 import { renderCueText, onTimeUpdate } from './sync';
-import type { SubtitleSource, SubtitleFetchResult } from './siteAdapter';
+import type { SubtitleSource, SubtitleFetchResult } from '../adapters/siteAdapter';
 
 // ═══════════════════════════════════════════════════════════
 // ПОШУК <video> (делегується активному адаптеру сайту)

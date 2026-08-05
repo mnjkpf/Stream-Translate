@@ -1,8 +1,9 @@
 // Subtitle Translator — переклад слова/фрази і tooltip
 
-import { state } from './state';
-import { MESSAGES } from './i18n';
-import { escapeHtml } from './utils';
+import { state } from '../state';
+import { MESSAGES } from '../../shared/i18n';
+import { escapeHtml } from '../../shared/utils';
+import { MSG } from '../../shared/messages';
 // Циклічний імпорт з interaction.ts (див. коментар там) — безпечно з тих
 // самих причин: обидва боки використовують імпорт лише всередині функцій.
 import { clearSelection } from './interaction';
@@ -111,15 +112,41 @@ function renderWordTooltip(word: string, raw: string, context: string, anchorPos
   showTooltip(anchorPos, html);
 
   // Обробка кнопок
-  state.tooltip!.querySelector('[data-action="save"]')?.addEventListener('click', () => {
-    chrome.runtime.sendMessage({
-      type: 'saveWord',
-      word: lemma,
-      translation,
-      context
-    });
-    const btn = state.tooltip!.querySelector('[data-action="save"]');
-    if (btn) btn.textContent = MESSAGES.saveWordDone;
+  // Раніше цей обробник не чекав на відповідь і завжди малював «✓ Збережено» —
+  // будь-який збій (401, валідація, бекенд лежить) виглядав як успіх, і слово
+  // мовчки зникало. Тепер чекаємо результат і показуємо реальний стан.
+  state.tooltip!.querySelector('[data-action="save"]')?.addEventListener('click', async () => {
+    const btn = state.tooltip!.querySelector('[data-action="save"]') as HTMLButtonElement | null;
+    if (btn) { btn.disabled = true; btn.textContent = MESSAGES.saveWordSaving; }
+
+    try {
+      const resp = await chrome.runtime.sendMessage({
+        type: MSG.saveWord,
+        word: lemma,
+        translation,
+        context,
+        pos,      // для бекенду (POST /words) — на локальний wordbook не впливає
+        example
+      });
+
+      // Кнопка живе в tooltip, який міг уже змінитись під наступний переклад.
+      const current = state.tooltip!.querySelector('[data-action="save"]') as HTMLButtonElement | null;
+      if (!current) return;
+
+      if (resp?.error) {
+        current.textContent = MESSAGES.saveWordFailed;
+        current.title = resp.error;
+        current.disabled = false;
+        return;
+      }
+      current.textContent = MESSAGES.saveWordDone;
+    } catch (err) {
+      const current = state.tooltip!.querySelector('[data-action="save"]') as HTMLButtonElement | null;
+      if (!current) return;
+      current.textContent = MESSAGES.saveWordFailed;
+      current.title = (err as Error).message;
+      current.disabled = false;
+    }
   });
   state.tooltip!.querySelector('[data-action="close"]')?.addEventListener('click', hideTooltip);
 }

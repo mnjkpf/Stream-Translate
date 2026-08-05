@@ -3,7 +3,7 @@
 // лексичної області між файлами); тепер — звичайний імпортований singleton,
 // esbuild бандлить усе в один content-script.
 
-import type { Cue } from './subtitleParser';
+import type { Cue } from './subtitles/subtitleParser';
 
 export interface AppState {
   video: HTMLVideoElement | null;

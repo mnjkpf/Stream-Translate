@@ -6,11 +6,13 @@
 
   "permissions": [
     "storage",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "identity"
   ],
 
   "host_permissions": [
-    "https://generativelanguage.googleapis.com/*"
+    "https://generativelanguage.googleapis.com/*",
+    "http://localhost:8080/*"
   ],
 
   "content_scripts": [

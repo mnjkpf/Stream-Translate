@@ -4,8 +4,13 @@
 // - кеш перекладів у chrome.storage.local
 // - збереження вивчених слів
 
-import { buildCacheKey } from './src/cacheKey';
-import { DEFAULT_MODEL } from './src/constants';
+import { buildCacheKey } from '../shared/cacheKey';
+import { DEFAULT_MODEL } from '../shared/constants';
+import {
+  login, logout, getStatus, apiFetch,
+  getMe, updateSettings, deleteWord, saveWordRemote, bumpWordsRevision
+} from '../api/backendAuth';
+import { MSG, STORAGE } from '../shared/messages';
 
 const CACHE_PREFIX = 'tr:'; // tr:{mode}:{src}:{tgt}:{hash(context)}:{text_lowercase} — див. src/cacheKey.ts
 const WORDBOOK_MAX_ENTRIES = 2000; // M-2: ротація — старі записи витісняються новими
@@ -27,7 +32,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // L-12: приймаємо повідомлення лише від власного розширення
   if (sender.id !== chrome.runtime.id) return;
 
-  if (msg.type === 'translate') {
+  if (msg.type === MSG.translate) {
     handleTranslate(msg).then(sendResponse).catch(err => {
       console.error('Translate error:', err);
       sendResponse({ error: err.message || String(err) });
@@ -35,11 +40,83 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true; // async
   }
 
-  if (msg.type === 'saveWord') {
-    saveWord(msg.word, msg.translation, msg.context)
+  if (msg.type === MSG.saveWord) {
+    saveWord(msg.word, msg.translation, msg.context, msg.pos, msg.example)
       .then(sendResponse)
       .catch(err => {
         console.error('Save word error:', err);
+        sendResponse({ error: err.message || String(err) });
+      });
+    return true;
+  }
+
+  // Auth (backendAuth.js). Уся мережа/токени — у воркері; content-script лише шле ці повідомлення.
+  if (msg.type === MSG.authLogin) {
+    login().then(sendResponse).catch(err => {
+      console.error('Login error:', err);
+      sendResponse({ error: err.message || String(err) });
+    });
+    return true;
+  }
+
+  if (msg.type === MSG.authLogout) {
+    logout().then(sendResponse).catch(err => {
+      console.error('Logout error:', err);
+      sendResponse({ error: err.message || String(err) });
+    });
+    return true;
+  }
+
+  if (msg.type === MSG.authStatus) {
+    getStatus().then(sendResponse).catch(err => {
+      console.error('Auth status error:', err);
+      sendResponse({ error: err.message || String(err) });
+    });
+    return true;
+  }
+
+  // Авторизований GET /words — список акаунтних слів для popup.
+  if (msg.type === MSG.wordsList) {
+    apiFetch('/words')
+      .then(async resp => (resp.ok ? { words: await resp.json() } : { error: `HTTP ${resp.status}` }))
+      .then(sendResponse)
+      .catch(err => {
+        console.error('Words list error:', err);
+        sendResponse({ error: err.message || String(err) });
+      });
+    return true;
+  }
+
+  if (msg.type === MSG.wordsDelete) {
+    deleteWord(msg.id)
+      .then(bumpWordsRevision) // сигнал іншим контекстам перечитати список
+      .then(() => ({ ok: true }))
+      .then(sendResponse)
+      .catch(err => {
+        console.error('Word delete error:', err);
+        sendResponse({ error: err.message || String(err) });
+      });
+    return true;
+  }
+
+  // Профіль + налаштування акаунта (popup вкладки Профіль/Налаштування).
+  if (msg.type === MSG.meGet) {
+    getMe()
+      .then(me => ({ me }))
+      .then(sendResponse)
+      .catch(err => {
+        console.error('Me get error:', err);
+        sendResponse({ error: err.message || String(err) });
+      });
+    return true;
+  }
+
+  if (msg.type === MSG.settingsUpdate) {
+    updateSettings(msg.settings)
+      .then(me => ({ me }))
+      .then(sendResponse)
+      .catch(err => {
+        console.error('Settings update error:', err);
         sendResponse({ error: err.message || String(err) });
       });
     return true;
@@ -176,10 +253,10 @@ async function callGemini(prompt, apiKey, model) {
 // чекав на завершення (успішне чи ні) попереднього перед своїм read-modify-write.
 let saveWordChain = Promise.resolve();
 
-function saveWord(word, translation, context) {
+function saveWord(word, translation, context, pos, example) {
   const result = saveWordChain.then(
-    () => doSaveWord(word, translation, context),
-    () => doSaveWord(word, translation, context)
+    () => doSaveWord(word, translation, context, pos, example),
+    () => doSaveWord(word, translation, context, pos, example)
   );
   // Ланцюг не має лишитись "відхиленим" назавжди — інакше всі наступні
   // збереження чекатимуть на проміс, що вже ніколи не вирішиться в успіх
@@ -187,8 +264,35 @@ function saveWord(word, translation, context) {
   return result;
 }
 
-async function doSaveWord(word, translation, context) {
-  const key = 'wordbook';
+// Залогінений -> слово йде на бекенд (з'явиться у списку акаунта, синхронізується
+// між пристроями). Розлогінений -> локальний wordbook, як раніше (offline-fallback).
+async function doSaveWord(word, translation, context, pos, example) {
+  const status = await getStatus();
+  if (status.loggedIn) {
+    const s = await chrome.storage.local.get([STORAGE.sourceLang, STORAGE.targetLang]);
+    await saveWordRemote({
+      text: word,
+      lemma: word,
+      // pos обмежений VARCHAR(32) на бекенді — довша відповідь Gemini інакше
+      // валила б увесь запит валідацією (400), і слово не збереглося б.
+      pos: pos ? String(pos).slice(0, 32) : null,
+      translation,
+      example: example || null,
+      sourceLang: s[STORAGE.sourceLang] || 'English',
+      targetLang: s[STORAGE.targetLang] || 'Ukrainian',
+      context: context || null,
+      sourceUrl: null
+    });
+    await bumpWordsRevision(); // popup/панель перечитають список без перезавантаження
+    return { ok: true, remote: true };
+  }
+  const local = await saveWordLocal(word, translation, context);
+  await bumpWordsRevision();
+  return local;
+}
+
+async function saveWordLocal(word, translation, context) {
+  const key = STORAGE.wordbook;
   const data = await chrome.storage.local.get(key);
   const wordbook = data[key] || [];
   wordbook.push({

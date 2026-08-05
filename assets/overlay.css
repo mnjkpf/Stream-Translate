@@ -399,6 +399,46 @@
   color: var(--subtr-text);
 }
 
+#subtr-settings .subtr-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--subtr-border);
+}
+
+#subtr-settings .subtr-acct-status {
+  font-size: 12px;
+  color: var(--subtr-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#subtr-settings .subtr-acct-btn {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--subtr-border);
+  color: var(--subtr-text);
+  border-radius: var(--subtr-r-sm);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--subtr-dur), border-color var(--subtr-dur);
+}
+
+#subtr-settings .subtr-acct-btn:hover {
+  background: rgba(255, 255, 255, .12);
+}
+
+#subtr-settings .subtr-acct-btn:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
 #subtr-settings label {
   display: block;
   font-size: 11px;

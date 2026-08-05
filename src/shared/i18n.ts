@@ -13,7 +13,9 @@ export const MESSAGES = {
   translating: 'Перекладаю...',
   tooltipAriaLabel: 'Переклад',
   saveWord: '⭐ Зберегти',
+  saveWordSaving: 'Зберігаю…',
   saveWordDone: '✓ Збережено',
+  saveWordFailed: '✕ Не збережено',
   close: 'Закрити',
   phraseLabel: 'Фраза:',
   sentenceLabel: 'Рядок:',
@@ -30,5 +32,12 @@ export const MESSAGES = {
   settingsButtonLabel: 'Налаштування перекладача субтитрів',
   settingsPanelAriaLabel: 'Налаштування перекладача субтитрів',
   settingsApiKeyRequired: 'Введіть API ключ',
-  settingsSaved: '✓ Збережено'
+  settingsSaved: '✓ Збережено',
+  // Акаунт / синхронізація (backendAuth.ts, authClient.ts)
+  accountLoggedOut: 'Не увійдено',
+  accountLoggedIn: (email: string) => email,
+  accountLoginBtn: 'Увійти через Google',
+  accountLogoutBtn: 'Вийти',
+  accountBusy: '…',
+  accountLoginFailed: 'Не вдалося увійти'
 };

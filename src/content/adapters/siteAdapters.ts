@@ -7,14 +7,14 @@
 // новий запис у manifest.json → content_scripts.matches.
 
 import type { SiteAdapter, SubtitleFetchResult } from './siteAdapter';
-import { parseYouTubeJson3, type Cue } from './subtitleParser';
+import { parseYouTubeJson3, type Cue } from '../subtitles/subtitleParser';
 import {
   buildCaptionCandidates,
   parseTimedtextBody,
   pollForMatchingTracks,
   type CaptionTrack,
   type PollFetchResult
-} from './youtubeCaptions';
+} from '../subtitles/youtubeCaptions';
 
 // ═══════════════════════════════════════════════════════════
 // Спільні хелпери вибору <video>

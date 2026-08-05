@@ -1,6 +1,6 @@
 // Subtitle Translator — синхронізація субтитрів з відео (timeupdate)
 
-import { state } from './state';
+import { state } from '../state';
 import type { Cue } from './subtitleParser';
 
 export function onTimeUpdate(): void {
