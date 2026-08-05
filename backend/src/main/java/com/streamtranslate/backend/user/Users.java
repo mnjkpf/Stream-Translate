@@ -1,9 +1,13 @@
 package com.streamtranslate.backend.user;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,4 +39,11 @@ public class Users {
     @Column(nullable = false, updatable = false, name = "created_at")
     @CreationTimestamp
     private Instant createdAt;
+
+    // Гнучкі налаштування (apiKey, sourceLang, targetLang, model). JSONB у БД,
+    // Map у Java — Hibernate 7 серіалізує через @JdbcTypeCode(JSON). Ініціалізуємо
+    // порожньою мапою, щоб новий користувач не мав null до першого збереження.
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "settings", nullable = false, columnDefinition = "jsonb")
+    private Map<String, String> settings = new HashMap<>();
 }

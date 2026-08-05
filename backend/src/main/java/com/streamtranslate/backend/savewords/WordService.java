@@ -37,9 +37,18 @@ public class WordService {
                 .toList();
     }
 
+    // Upsert за унікальним ключем (user, lemma, sourceLang, targetLang): повторне
+    // збереження того самого слова оновлює наявний рядок, а не падає на
+    // uq_saved_words_user_lemma_langs (інакше «⭐ Зберегти» двічі -> 500).
     public WordResponse create(UUID currentUserId, WordRequest request) {
-        SavedWords word = new SavedWords();
-        word.setUser(userRepository.getReferenceById(currentUserId)); // сам юзер уже перевірений при видачі JWT
+        SavedWords word = savedWordsRepository
+                .findByUser_IdAndLemmaAndSourceLangAndTargetLang(
+                        currentUserId, request.lemma(), request.sourceLang(), request.targetLang())
+                .orElseGet(() -> {
+                    SavedWords fresh = new SavedWords();
+                    fresh.setUser(userRepository.getReferenceById(currentUserId)); // юзер уже перевірений при видачі JWT
+                    return fresh;
+                });
         applyRequest(word, request);
         return WordResponse.from(savedWordsRepository.save(word));
     }
