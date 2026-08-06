@@ -37,8 +37,17 @@ declare namespace chrome.identity {
   function launchWebAuthFlow(details: { url: string; interactive?: boolean }): Promise<string>;
 }
 
+declare namespace chrome.tabs {
+  // create() не потребує дозволу "tabs" — той дає доступ до вмісту вкладок,
+  // а не до їх відкриття. Тому в manifest нічого додавати не треба.
+  function create(properties: { url: string; active?: boolean }): Promise<any>;
+}
+
 declare namespace chrome.runtime {
   const id: string;
+
+  // Повний URL до файлу всередині розширення (chrome-extension://<id>/...).
+  function getURL(path: string): string;
 
   function sendMessage(message: unknown): Promise<any>;
 

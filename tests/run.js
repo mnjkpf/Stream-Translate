@@ -124,6 +124,40 @@ test('strips HTML and ASS tags from cue text', () => {
   assert.strictEqual(cues[0].text, 'Italic text');
 });
 
+test('strips ">>" speaker-change markers at the start of a line', () => {
+  const srt = '1\n00:00:01,000 --> 00:00:02,000\n>> Oh my god, the apex.';
+  const cues = parseSRT(srt);
+  assert.strictEqual(cues[0].text, 'Oh my god, the apex.');
+});
+
+test('strips a mid-line ">>" marker without gluing the words together', () => {
+  const srt = '1\n00:00:01,000 --> 00:00:02,000\nNice. >> Oh my god, the apex.';
+  const cues = parseSRT(srt);
+  assert.strictEqual(cues[0].text, 'Nice. Oh my god, the apex.');
+});
+
+test('strips ">>>" (new topic) the same way as ">>"', () => {
+  const srt = '1\n00:00:01,000 --> 00:00:02,000\n>>> Back to the studio';
+  const cues = parseSRT(srt);
+  assert.strictEqual(cues[0].text, 'Back to the studio');
+});
+
+test('leaves a single ">" alone (not a speaker marker)', () => {
+  const srt = '1\n00:00:01,000 --> 00:00:02,000\n5 > 3 is true';
+  const cues = parseSRT(srt);
+  assert.strictEqual(cues[0].text, '5 > 3 is true');
+});
+
+test('strips ">>" from YouTube json3 cues too', () => {
+  const doc = {
+    events: [
+      { tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: '>> ' }, { utf8: 'Hello there' }] }
+    ]
+  };
+  const cues = parseYouTubeJson3(doc);
+  assert.strictEqual(cues[0].text, 'Hello there');
+});
+
 test('strips a leading BOM and normalizes CRLF', () => {
   const srt = '﻿1\r\n00:00:01,000 --> 00:00:02,000\r\nWith BOM';
   const cues = parseSRT(srt);

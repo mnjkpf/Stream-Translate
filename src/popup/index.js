@@ -1,29 +1,45 @@
-import { DEFAULT_MODEL } from '../shared/constants';
+import {
+  DEFAULT_MODEL, GEMINI_MODELS, SOURCE_LANGUAGES, TARGET_LANGUAGES
+} from '../shared/constants';
+import { createDropdown } from '../shared/dropdown';
 import { login, logout, getAuthStatus, isAuthError } from '../api/authClient';
-import { MSG, STORAGE, SETTINGS_KEYS, touched } from '../shared/messages';
+import { MSG, STORAGE, SETTINGS_KEYS, KEY_SOURCE, touched } from '../shared/messages';
 
 const $ = (id) => document.getElementById(id);
 const send = (msg) => chrome.runtime.sendMessage(msg);
 
+// Кастомні дропдауни замість <select> — див. shared/dropdown.ts.
+const sourceLang = createDropdown(SOURCE_LANGUAGES, 'English', 'Мова субтитрів');
+const targetLang = createDropdown(TARGET_LANGUAGES, 'Ukrainian', 'Перекладати на');
+const model = createDropdown(GEMINI_MODELS, DEFAULT_MODEL, 'Модель Gemini');
+$('sourceLangDd').appendChild(sourceLang.el);
+$('targetLangDd').appendChild(targetLang.el);
+$('modelDd').appendChild(model.el);
+
 const els = {
   // settings
-  apiKey: $('apiKey'), sourceLang: $('sourceLang'), targetLang: $('targetLang'),
-  model: $('model'), save: $('save'), status: $('status'),
+  apiKey: $('apiKey'), sourceLang, targetLang, model,
+  save: $('save'), status: $('status'),
   // profile
   profileLoggedOut: $('profileLoggedOut'), profileLoggedIn: $('profileLoggedIn'),
   profileLoginBtn: $('profileLoginBtn'), logoutBtn: $('logoutBtn'),
+  openDashboard: $('openDashboard'),
   profileAvatar: $('profileAvatar'), profileName: $('profileName'),
   profileEmail: $('profileEmail'), profileSince: $('profileSince'),
   statTotal: $('statTotal'), statWeek: $('statWeek'), statPairs: $('statPairs'),
   // words
   wordsLoggedOut: $('wordsLoggedOut'), wordsLoggedIn: $('wordsLoggedIn'),
-  wordSearch: $('wordSearch'), wordsList: $('wordsList'), wordsCount: $('wordsCount')
+  wordSearch: $('wordSearch'), wordsList: $('wordsList'), wordsCount: $('wordsCount'),
+  // джерело ключа
+  keySource: $('keySource'), ownKeyBlock: $('ownKeyBlock'),
+  proxyBlock: $('proxyBlock'), proxyHint: $('proxyHint'), quotaRow: $('quotaRow')
 };
 
 let loggedIn = false;
 let allWords = [];
 let authBusy = false;
 let activeTab = 'profile';
+let keySource = KEY_SOURCE.own;
 
 // ── Вкладки ──────────────────────────────────────────────────────────────────
 document.querySelectorAll('.pp-tab').forEach((tab) => {
@@ -71,8 +87,10 @@ async function refreshAuthState() {
     await loadWords(); // одразу: статистика профілю рахується з цього ж списку
   } else {
     allWords = [];
+    els.quotaRow.hidden = true; // квота без акаунта не існує
     loadSettingsFromStorage();
   }
+  renderKeySource(); // підказка «потрібно увійти» залежить від стану логіну
 }
 
 function toggleSections() {
@@ -80,6 +98,47 @@ function toggleSections() {
   els.profileLoggedIn.hidden = !loggedIn;
   els.wordsLoggedOut.hidden = loggedIn;
   els.wordsLoggedIn.hidden = !loggedIn;
+}
+
+// ── Джерело ключа: свій / вбудований (проксі) ────────────────────────────────
+els.keySource.querySelectorAll('[data-key-source]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    keySource = btn.dataset.keySource;
+    renderKeySource();
+    if (keySource === KEY_SOURCE.proxy) loadQuota();
+  });
+});
+
+function renderKeySource() {
+  els.keySource.querySelectorAll('[data-key-source]').forEach((b) => {
+    b.classList.toggle('active', b.dataset.keySource === keySource);
+  });
+
+  const proxy = keySource === KEY_SOURCE.proxy;
+  els.ownKeyBlock.hidden = proxy;
+  els.proxyBlock.hidden = !proxy;
+
+  // Вбудований ключ потребує акаунта: без логіну нема кого рахувати в квоті.
+  if (proxy && !loggedIn) {
+    els.proxyHint.textContent = 'Потрібно увійти — вбудований ключ доступний лише з акаунтом.';
+    els.proxyHint.className = 'hint warn';
+  } else if (proxy) {
+    els.proxyHint.textContent = 'Переклад іде через сервер — власний ключ не потрібен.';
+    els.proxyHint.className = 'hint';
+  }
+}
+
+async function loadQuota() {
+  if (!loggedIn) { els.quotaRow.hidden = true; return; }
+
+  const r = await send({ type: MSG.quotaGet });
+  if (!r || r.error || !r.quota) { els.quotaRow.hidden = true; return; }
+
+  const q = r.quota;
+  els.quotaRow.hidden = false;
+  els.quotaRow.textContent = q.enabled
+    ? `Вбудований ключ: залишилось ${q.remaining} з ${q.limit} на сьогодні`
+    : 'Вбудований ключ зараз недоступний — користуйтесь своїм';
 }
 
 // ── Профіль + налаштування з бекенду ─────────────────────────────────────────
@@ -98,35 +157,48 @@ async function loadMe() {
   const s = me.settings || {};
   chrome.storage.local.get([...SETTINGS_KEYS], (local) => {
     els.apiKey.value = s.apiKey || local.apiKey || '';
-    els.sourceLang.value = s.sourceLang || local.sourceLang || 'English';
-    els.targetLang.value = s.targetLang || local.targetLang || 'Ukrainian';
-    els.model.value = s.model || local.model || DEFAULT_MODEL;
+    els.sourceLang.setValue(s.sourceLang || local.sourceLang || 'English');
+    els.targetLang.setValue(s.targetLang || local.targetLang || 'Ukrainian');
+    els.model.setValue(s.model || local.model || DEFAULT_MODEL);
+    keySource = s.keySource || local.keySource || KEY_SOURCE.own;
+    renderKeySource();
+    if (keySource === KEY_SOURCE.proxy) loadQuota();
   });
 }
 
 function loadSettingsFromStorage() {
   chrome.storage.local.get([...SETTINGS_KEYS], (data) => {
     if (data.apiKey) els.apiKey.value = data.apiKey;
-    if (data.sourceLang) els.sourceLang.value = data.sourceLang;
-    if (data.targetLang) els.targetLang.value = data.targetLang;
-    els.model.value = data.model || DEFAULT_MODEL;
+    if (data.sourceLang) els.sourceLang.setValue(data.sourceLang);
+    if (data.targetLang) els.targetLang.setValue(data.targetLang);
+    els.model.setValue(data.model || DEFAULT_MODEL);
+    keySource = data.keySource || KEY_SOURCE.own;
+    renderKeySource();
   });
 }
 
 // ── Збереження налаштувань ───────────────────────────────────────────────────
 els.save.addEventListener('click', async () => {
   const apiKey = els.apiKey.value.trim();
-  if (!apiKey) {
+
+  // Свій ключ обов'язковий лише в режимі 'own' — у режимі проксі перекладає сервер.
+  if (keySource === KEY_SOURCE.own && !apiKey) {
     els.status.textContent = 'Введіть API ключ';
+    els.status.className = 'err';
+    return;
+  }
+  if (keySource === KEY_SOURCE.proxy && !loggedIn) {
+    els.status.textContent = 'Увійдіть, щоб використати вбудований ключ';
     els.status.className = 'err';
     return;
   }
 
   const settings = {
     apiKey,
-    sourceLang: els.sourceLang.value,
-    targetLang: els.targetLang.value,
-    model: els.model.value.trim() || DEFAULT_MODEL
+    sourceLang: els.sourceLang.getValue(),
+    targetLang: els.targetLang.getValue(),
+    model: els.model.getValue(),
+    keySource
   };
 
   // Локально завжди (background/translate читають саме storage).
@@ -145,6 +217,7 @@ els.save.addEventListener('click', async () => {
   els.status.textContent = '✓ Збережено';
   els.status.className = 'ok';
   setTimeout(() => { els.status.textContent = ''; }, 2000);
+  if (keySource === KEY_SOURCE.proxy) loadQuota();
 });
 
 // ── Слова ────────────────────────────────────────────────────────────────────
@@ -256,6 +329,12 @@ async function removeWord(id) {
 }
 
 els.wordSearch.addEventListener('input', renderWords);
+
+// Дашборд — окрема вкладка: графік із фільтрами й довга історія у 360px popup
+// не вміщаються. chrome.tabs.create не потребує дозволу "tabs".
+els.openDashboard.addEventListener('click', () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') });
+});
 
 // ── Логін / логаут ───────────────────────────────────────────────────────────
 els.profileLoginBtn.addEventListener('click', doAuth);

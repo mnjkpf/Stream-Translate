@@ -144,6 +144,109 @@
 
     .hint { font-size: 11px; color: var(--tr-text-3); margin-top: 5px; }
     .hint a { color: var(--tr-accent); }
+    .hint.warn { color: var(--tr-danger); }
+
+    /* Перемикач джерела ключа */
+    .pp-seg {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid var(--tr-border);
+      border-radius: 10px;
+    }
+    .pp-seg-btn {
+      flex: 1;
+      padding: 7px 6px;
+      background: transparent;
+      border: none;
+      color: var(--tr-text-3);
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background var(--tr-dur), color var(--tr-dur);
+    }
+    .pp-seg-btn:hover { color: var(--tr-text-2); }
+    .pp-seg-btn.active { background: var(--tr-accent-grad); color: #fff; }
+
+    /* Кастомний дропдаун (shared/dropdown.ts) — нативний <select> малює список
+       засобами ОС, його неможливо стилізувати під темну тему. */
+    .subtr-dd { position: relative; }
+    .subtr-dd-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid var(--tr-border);
+      color: var(--tr-text);
+      border-radius: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color var(--tr-dur), box-shadow var(--tr-dur);
+    }
+    .subtr-dd-trigger:hover { border-color: rgba(255, 255, 255, .22); }
+    .subtr-dd-trigger:focus-visible,
+    .subtr-dd.is-open .subtr-dd-trigger {
+      outline: none;
+      border-color: var(--tr-accent);
+      box-shadow: 0 0 0 3px var(--tr-accent-ring);
+    }
+    .subtr-dd-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .subtr-dd-chevron {
+      flex: none;
+      display: grid;
+      place-items: center;
+      color: var(--tr-text-3);
+      transition: transform var(--tr-dur) var(--tr-ease);
+    }
+    .subtr-dd.is-open .subtr-dd-chevron { transform: rotate(180deg); }
+
+    .subtr-dd-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 20;
+      padding: 5px;
+      background: #1b1c24;
+      border: 1px solid var(--tr-border);
+      border-radius: 12px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, .55);
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .subtr-dd.is-open .subtr-dd-menu { display: block; }
+
+    .subtr-dd-opt {
+      width: 100%;
+      display: block;
+      padding: 8px 10px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: var(--tr-text-2);
+      font-family: inherit;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+      transition: background var(--tr-dur), color var(--tr-dur);
+    }
+    .subtr-dd-opt:hover,
+    .subtr-dd-opt:focus-visible { outline: none; background: rgba(255, 255, 255, .07); color: var(--tr-text); }
+    .subtr-dd-opt.is-selected {
+      background: linear-gradient(135deg, rgba(99, 102, 241, .22), rgba(139, 92, 246, .22));
+      color: var(--tr-text);
+    }
+    .subtr-dd-opt-label { display: block; font-weight: 500; }
+    .subtr-dd-opt-hint { display: block; font-size: 11px; color: var(--tr-text-3); margin-top: 2px; }
     #status {
       margin-top: 10px;
       font-size: 12px;
@@ -178,6 +281,15 @@
     .pp-profile-name { font-size: 14px; font-weight: 600; }
     .pp-profile-email { font-size: 12px; color: var(--tr-text-3); margin-top: 2px; word-break: break-all; }
     .pp-profile-since { font-size: 11px; color: var(--tr-text-3); margin-top: 14px; }
+    .pp-quota {
+      margin-top: 14px;
+      padding: 9px 11px;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid var(--tr-border);
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--tr-text-2);
+    }
 
     /* Статистика профілю — рахується клієнтськи зі списку слів */
     .pp-stats {
@@ -305,7 +417,9 @@
           <div class="pp-stat-label">Мовних пар</div>
         </div>
       </div>
+      <div class="pp-quota" id="quotaRow" hidden></div>
       <div class="pp-profile-since" id="profileSince"></div>
+      <button type="button" id="openDashboard" class="pp-btn-primary">Статистика та історія</button>
       <button type="button" id="logoutBtn" class="pp-btn-ghost">Вийти</button>
     </div>
   </section>
@@ -324,33 +438,32 @@
 
   <!-- Налаштування -->
   <section class="pp-panel" data-panel="settings" hidden>
-    <label for="apiKey">Gemini API Key</label>
-    <input type="password" id="apiKey" placeholder="AIza...">
-    <div class="hint">
-      Отримати безкоштовно: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com</a>
+    <label>Ключ Gemini</label>
+    <div class="pp-seg" id="keySource">
+      <button type="button" class="pp-seg-btn active" data-key-source="own">Свій ключ</button>
+      <button type="button" class="pp-seg-btn" data-key-source="proxy">Вбудований</button>
     </div>
 
-    <label for="sourceLang">Мова субтитрів</label>
-    <select id="sourceLang">
-      <option value="English">English</option>
-      <option value="Russian">Російська</option>
-      <option value="Spanish">Іспанська</option>
-      <option value="French">Французька</option>
-      <option value="German">Німецька</option>
-    </select>
-
-    <label for="targetLang">Перекладати на</label>
-    <select id="targetLang">
-      <option value="Ukrainian">Українська</option>
-      <option value="Russian">Російська</option>
-      <option value="English">Англійська</option>
-    </select>
-
-    <label for="model">Gemini модель</label>
-    <input type="text" id="model" placeholder="gemini-2.5-flash">
-    <div class="hint">
-      Список моделей: <a href="https://ai.google.dev/gemini-api/docs/models" target="_blank" rel="noopener noreferrer">ai.google.dev</a>
+    <div id="ownKeyBlock">
+      <label for="apiKey">API Key</label>
+      <input type="password" id="apiKey" placeholder="AIza...">
+      <div class="hint">
+        Отримати безкоштовно: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com</a>
+      </div>
     </div>
+
+    <div id="proxyBlock" hidden>
+      <div class="hint" id="proxyHint">Переклад іде через сервер — власний ключ не потрібен.</div>
+    </div>
+
+    <label>Мова субтитрів</label>
+    <div id="sourceLangDd"></div>
+
+    <label>Перекладати на</label>
+    <div id="targetLangDd"></div>
+
+    <label>Модель Gemini</label>
+    <div id="modelDd"></div>
 
     <button type="button" id="save" class="pp-btn-primary">Зберегти</button>
     <div id="status"></div>

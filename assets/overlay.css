@@ -84,6 +84,14 @@
   color: #fff;
 }
 
+/* Уже збережене слово — стримане підкреслення, а не заливка: підсвічених слів
+   у репліці може бути багато, і фон робив би рядок нечитабельним.
+   Іде перед :hover/.subtr-selected у каскаді, тож ті перебивають підсвітку. */
+#subtr-subs .subtr-word.subtr-word-known {
+  box-shadow: inset 0 -2px 0 0 rgba(52, 211, 153, .85);
+  border-radius: 4px;
+}
+
 /* Tooltip з перекладом */
 #subtr-tooltip {
   position: fixed;
@@ -468,6 +476,172 @@
 #subtr-settings select:focus {
   border-color: var(--subtr-accent);
   box-shadow: 0 0 0 3px var(--subtr-accent-ring);
+}
+
+/* ═══ Перемикач джерела ключа (свій / вбудований) ═══
+   Дзеркалить перемикач у popup — обидва пишуть у той самий ключ storage,
+   тож стан панелі й popup завжди узгоджений. Спеціфічність id + class
+   потрібна, щоб перебити загальне "#subtr-settings button" нижче. */
+#subtr-settings .subtr-seg {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--subtr-border);
+  border-radius: var(--subtr-r-sm);
+}
+
+#subtr-settings .subtr-seg-btn {
+  flex: 1;
+  width: auto;
+  margin: 0;
+  padding: 7px 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  box-shadow: none;
+  color: var(--subtr-text-3);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--subtr-dur), color var(--subtr-dur);
+}
+
+#subtr-settings .subtr-seg-btn:hover {
+  transform: none;
+  filter: none;
+  color: var(--subtr-text-2);
+}
+
+#subtr-settings .subtr-seg-btn.active {
+  background: var(--subtr-accent-grad);
+  color: #fff;
+}
+
+#subtr-settings .subtr-proxy-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--subtr-text-3);
+  line-height: 1.45;
+}
+
+#subtr-settings .subtr-proxy-hint.warn { color: var(--subtr-danger, #fb7185); }
+
+/* ═══ Кастомний дропдаун (shared/dropdown.ts) ═══
+   Нативний <select> малює список засобами ОС — стилізувати його неможливо,
+   тому власний віджет. Селектори мають перебивати загальне правило
+   "#subtr-settings button" нижче (воно робить кнопки на всю ширину з
+   градієнтом), тож усі правила тут зі спеціфічністю id + class. */
+#subtr-settings .subtr-dd { position: relative; }
+
+#subtr-settings .subtr-dd-trigger {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--subtr-border);
+  color: var(--subtr-text);
+  border-radius: var(--subtr-r-sm);
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 400;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--subtr-dur), box-shadow var(--subtr-dur);
+}
+
+#subtr-settings .subtr-dd-trigger:hover {
+  transform: none;
+  filter: none;
+  border-color: rgba(255, 255, 255, .22);
+}
+
+#subtr-settings .subtr-dd.is-open .subtr-dd-trigger,
+#subtr-settings .subtr-dd-trigger:focus-visible {
+  outline: none;
+  border-color: var(--subtr-accent);
+  box-shadow: 0 0 0 3px var(--subtr-accent-ring);
+}
+
+#subtr-settings .subtr-dd-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#subtr-settings .subtr-dd-chevron {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--subtr-text-3);
+  transition: transform var(--subtr-dur) var(--subtr-ease);
+}
+
+#subtr-settings .subtr-dd.is-open .subtr-dd-chevron { transform: rotate(180deg); }
+
+#subtr-settings .subtr-dd-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 5px;
+  background: #1b1c24;
+  border: 1px solid var(--subtr-border);
+  border-radius: var(--subtr-r-md, 12px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, .55);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+#subtr-settings .subtr-dd.is-open .subtr-dd-menu { display: block; }
+
+#subtr-settings .subtr-dd-opt {
+  width: 100%;
+  margin: 0;
+  display: block;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  box-shadow: none;
+  color: var(--subtr-text-2);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--subtr-dur), color var(--subtr-dur);
+}
+
+#subtr-settings .subtr-dd-opt:hover,
+#subtr-settings .subtr-dd-opt:focus-visible {
+  outline: none;
+  transform: none;
+  filter: none;
+  background: rgba(255, 255, 255, .07);
+  color: var(--subtr-text);
+}
+
+#subtr-settings .subtr-dd-opt.is-selected {
+  background: linear-gradient(135deg, rgba(99, 102, 241, .22), rgba(139, 92, 246, .22));
+  color: var(--subtr-text);
+}
+
+#subtr-settings .subtr-dd-opt-label { display: block; font-weight: 500; }
+
+#subtr-settings .subtr-dd-opt-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--subtr-text-3);
+  margin-top: 2px;
 }
 
 #subtr-settings button {

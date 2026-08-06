@@ -8,9 +8,11 @@ import { buildCacheKey } from '../shared/cacheKey';
 import { DEFAULT_MODEL } from '../shared/constants';
 import {
   login, logout, getStatus, apiFetch,
-  getMe, updateSettings, deleteWord, saveWordRemote, bumpWordsRevision
+  getMe, updateSettings, deleteWord, saveWordRemote, bumpWordsRevision,
+  translateViaProxy, getProxyQuota,
+  recordHistory, listHistory, getStats
 } from '../api/backendAuth';
-import { MSG, STORAGE } from '../shared/messages';
+import { MSG, STORAGE, KEY_SOURCE } from '../shared/messages';
 
 const CACHE_PREFIX = 'tr:'; // tr:{mode}:{src}:{tgt}:{hash(context)}:{text_lowercase} — див. src/cacheKey.ts
 const WORDBOOK_MAX_ENTRIES = 2000; // M-2: ротація — старі записи витісняються новими
@@ -111,6 +113,41 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  // Стан денної квоти вбудованого ключа — для профілю в popup.
+  if (msg.type === MSG.quotaGet) {
+    getProxyQuota()
+      .then(quota => ({ quota }))
+      .then(sendResponse)
+      .catch(err => {
+        console.error('Quota get error:', err);
+        sendResponse({ error: err.message || String(err) });
+      });
+    return true;
+  }
+
+  // Історія та статистика — для сторінки-дашборда.
+  if (msg.type === MSG.historyList) {
+    listHistory(msg.query || '', msg.page || 0)
+      .then(history => ({ history }))
+      .then(sendResponse)
+      .catch(err => {
+        console.error('History list error:', err);
+        sendResponse({ error: err.message || String(err) });
+      });
+    return true;
+  }
+
+  if (msg.type === MSG.statsGet) {
+    getStats(msg.days || 30)
+      .then(stats => ({ stats }))
+      .then(sendResponse)
+      .catch(err => {
+        console.error('Stats error:', err);
+        sendResponse({ error: err.message || String(err) });
+      });
+    return true;
+  }
+
   if (msg.type === MSG.settingsUpdate) {
     updateSettings(msg.settings)
       .then(me => ({ me }))
@@ -123,34 +160,62 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-async function handleTranslate({ text, context, mode }) {
-  const settings = await chrome.storage.local.get(['apiKey', 'sourceLang', 'targetLang', 'model']);
-
-  if (!settings.apiKey) {
-    return { error: MESSAGES.apiKeyMissing };
-  }
+async function handleTranslate({ text, context, mode, sourceUrl }) {
+  const settings = await chrome.storage.local.get([
+    STORAGE.apiKey, STORAGE.sourceLang, STORAGE.targetLang, STORAGE.model, STORAGE.keySource
+  ]);
 
   const sourceLang = settings.sourceLang || 'English';
   const targetLang = settings.targetLang || 'Ukrainian';
   const model = settings.model || DEFAULT_MODEL; // M-6: модель налаштовується в popup
+  const useProxy = settings.keySource === KEY_SOURCE.proxy;
 
-  // Перевіряємо кеш (ключ враховує mode і хеш контексту — H-1)
+  if (!useProxy && !settings.apiKey) {
+    return { error: MESSAGES.apiKeyMissing };
+  }
+
+  // Локальний кеш перевіряємо в ОБОХ режимах — він економить і чужу квоту,
+  // і запити зі своїм ключем. Ключ не залежить від джерела ключа: переклад
+  // того самого слова тими самими мовами однаковий незалежно від того, чий ключ.
   const cacheKey = buildCacheKey(CACHE_PREFIX, mode, sourceLang, targetLang, text, context);
   const cached = await chrome.storage.local.get(cacheKey);
   if (cached[cacheKey]) {
+    // Попадання в кеш — теж дія користувача, тож в історію воно йде так само:
+    // історія відображає активність навчання, а не витрати на API.
+    logHistory({ text, translation: cached[cacheKey], mode, sourceLang, targetLang, sourceUrl });
     return { translation: cached[cacheKey], cached: true };
   }
 
-  // Викликаємо Gemini
-  const prompt = buildPrompt(text, context, mode, sourceLang, targetLang);
-  const translation = await callGemini(prompt, settings.apiKey, model);
+  let translation;
+  if (useProxy) {
+    // Вбудований ключ: промпт будує СЕРВЕР із цих полів (див. PromptBuilder на
+    // бекенді) — клієнт готовий промпт не шле принципово.
+    try {
+      const result = await translateViaProxy({ text, context, mode, sourceLang, targetLang });
+      translation = result.translation;
+    } catch (err) {
+      // Код квоти доносимо до UI, щоб tooltip міг запропонувати свій ключ.
+      return { error: err.message || String(err), code: err.code };
+    }
+  } else {
+    const prompt = buildPrompt(text, context, mode, sourceLang, targetLang);
+    translation = await callGemini(prompt, settings.apiKey, model);
+  }
 
   // Зберігаємо в кеш (тільки короткі — щоб не засмічувати storage)
   if (text.length < 80) {
     await chrome.storage.local.set({ [cacheKey]: translation });
   }
 
+  logHistory({ text, translation, mode, sourceLang, targetLang, sourceUrl });
   return { translation, cached: false };
+}
+
+// Запис в історію — свідомо БЕЗ await: користувач уже має переклад, і чекати
+// на мережу заради статистики означало б сповільнити tooltip. Якщо не залогінений
+// або бекенд лежить, recordHistory тихо ковтає помилку.
+function logHistory(entry) {
+  recordHistory({ ...entry, sourceUrl: entry.sourceUrl || null });
 }
 
 function buildPrompt(text, context, mode, sourceLang, targetLang) {

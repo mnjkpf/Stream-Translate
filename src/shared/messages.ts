@@ -15,7 +15,20 @@ export const MSG = {
   settingsUpdate: 'settings:update',
 
   wordsList: 'words:list',
-  wordsDelete: 'words:delete'
+  wordsDelete: 'words:delete',
+
+  quotaGet: 'quota:get',
+
+  historyList: 'history:list',
+  statsGet: 'stats:get'
+} as const;
+
+// Звідки береться ключ Gemini. 'own' — ключ користувача зі storage (працює
+// офлайн і без логіну); 'proxy' — серверний ключ через наш бекенд (потребує
+// логіну і має денну квоту).
+export const KEY_SOURCE = {
+  own: 'own',
+  proxy: 'proxy'
 } as const;
 
 // ── Ключі chrome.storage.local ───────────────────────────────────────────────
@@ -25,6 +38,7 @@ export const STORAGE = {
   sourceLang: 'sourceLang',
   targetLang: 'targetLang',
   model: 'model',
+  keySource: 'keySource', // 'own' | 'proxy' — див. KEY_SOURCE нижче
 
   // Автентифікація
   tokens: 'authTokens',
@@ -43,7 +57,8 @@ export const SETTINGS_KEYS = [
   STORAGE.apiKey,
   STORAGE.sourceLang,
   STORAGE.targetLang,
-  STORAGE.model
+  STORAGE.model,
+  STORAGE.keySource
 ] as const;
 
 // Чи зачепили зміни storage хоч один із перелічених ключів.

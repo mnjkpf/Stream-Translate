@@ -210,6 +210,119 @@ async function migrateLocalWordbook(): Promise<void> {
   }
 }
 
+// ─── Проксі-переклад (вбудований ключ) ───────────────────────────────────────
+
+export interface ProxyTranslation {
+  translation: string;
+  cached: boolean;
+  remaining: number;
+}
+
+export interface ProxyQuota {
+  enabled: boolean;
+  used: number;
+  limit: number;
+  remaining: number;
+}
+
+// Помилка проксі з кодом від бекенда (USER_QUOTA / GLOBAL_QUOTA / PROXY_DISABLED),
+// щоб UI міг відрізнити «зачекай до завтра» від «увімкни свій ключ».
+export class ProxyError extends Error {
+  code: string;
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
+// Сервер сам будує промпт із цих полів — навмисно не шлемо готовий текст промпту,
+// інакше ендпоінт став би безкоштовним чатом загального призначення.
+export async function translateViaProxy(payload: {
+  text: string;
+  context: string;
+  mode: string;
+  sourceLang: string;
+  targetLang: string;
+}): Promise<ProxyTranslation> {
+  const resp = await apiFetch('/translate', { method: 'POST', body: JSON.stringify(payload) });
+  if (resp.ok) return (await resp.json()) as ProxyTranslation;
+
+  let code = 'UPSTREAM_ERROR';
+  let message = `Помилка перекладу (${resp.status})`;
+  try {
+    const body = await resp.json();
+    code = body.code ?? code;
+    message = body.message ?? message;
+  } catch {
+    // тіло не JSON — лишаємо узагальнене повідомлення
+  }
+  throw new ProxyError(code, message);
+}
+
+export async function getProxyQuota(): Promise<ProxyQuota> {
+  const resp = await apiFetch('/translate/quota');
+  if (!resp.ok) throw new Error(`GET /translate/quota -> ${resp.status}`);
+  return (await resp.json()) as ProxyQuota;
+}
+
+// ─── Історія перекладів і статистика ─────────────────────────────────────────
+
+export interface HistoryItem {
+  id: string;
+  text: string;
+  translation: string;
+  mode: string;
+  sourceLang: string;
+  targetLang: string;
+  sourceUrl: string | null;
+  createdAt: string;
+}
+
+export interface HistoryPage {
+  items: HistoryItem[];
+  page: number;
+  totalPages: number;
+  totalItems: number;
+}
+
+export interface StatsPoint {
+  date: string;
+  translations: number;
+  savedWords: number;
+}
+
+// Викликається після КОЖНОГО успішного перекладу, незалежно від джерела ключа —
+// у режимі «свій ключ» бекенд про переклад інакше не дізнався б узагалі.
+// Best-effort: історія не має ламати сам переклад, тому помилки ковтаємо.
+export async function recordHistory(entry: {
+  text: string;
+  translation: string;
+  mode: string;
+  sourceLang: string;
+  targetLang: string;
+  sourceUrl: string | null;
+}): Promise<void> {
+  try {
+    await apiFetch('/history', { method: 'POST', body: JSON.stringify(entry) });
+  } catch {
+    // не залогінений або мережа — переклад користувач уже отримав
+  }
+}
+
+export async function listHistory(query: string, page: number): Promise<HistoryPage> {
+  const params = new URLSearchParams({ page: String(page), size: '50' });
+  if (query) params.set('query', query);
+  const resp = await apiFetch(`/history?${params.toString()}`);
+  if (!resp.ok) throw new Error(`GET /history -> ${resp.status}`);
+  return (await resp.json()) as HistoryPage;
+}
+
+export async function getStats(days: number): Promise<StatsPoint[]> {
+  const resp = await apiFetch(`/stats?days=${days}`);
+  if (!resp.ok) throw new Error(`GET /stats -> ${resp.status}`);
+  return (await resp.json()) as StatsPoint[];
+}
+
 // Копіює apiKey/sourceLang/targetLang/model з акаунта у chrome.storage.local.
 // Best-effort: будь-який збій ковтаємо (логін не має падати через це).
 async function pullSettingsIntoStorage(): Promise<void> {
@@ -217,7 +330,7 @@ async function pullSettingsIntoStorage(): Promise<void> {
     const me = await getMe();
     const s = me.settings ?? {};
     const patch: Record<string, string> = {};
-    for (const key of ['apiKey', 'sourceLang', 'targetLang', 'model'] as const) {
+    for (const key of ['apiKey', 'sourceLang', 'targetLang', 'model', 'keySource'] as const) {
       if (s[key]) patch[key] = s[key];
     }
     if (Object.keys(patch).length > 0) await chrome.storage.local.set(patch);

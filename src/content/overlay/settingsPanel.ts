@@ -11,23 +11,35 @@
 import { adapter } from '../adapters/activeAdapter';
 import { MESSAGES } from '../../shared/i18n';
 import { relocateFloatingUI } from './ui';
-import { DEFAULT_MODEL } from '../../shared/constants';
+import {
+  DEFAULT_MODEL, GEMINI_MODELS, SOURCE_LANGUAGES, TARGET_LANGUAGES
+} from '../../shared/constants';
+import { createDropdown, type Dropdown } from '../../shared/dropdown';
 import { login, logout, getAuthStatus, isAuthError, type AuthResult } from '../../api/authClient';
-import { MSG, STORAGE, SETTINGS_KEYS, touched } from '../../shared/messages';
+import { MSG, STORAGE, SETTINGS_KEYS, KEY_SOURCE, touched } from '../../shared/messages';
 
 const SETTINGS_BUTTON_ID = 'subtr-settings-btn';
 const SETTINGS_PANEL_ID = 'subtr-settings';
 
 interface SettingsFields {
   apiKey: HTMLInputElement;
-  sourceLang: HTMLSelectElement;
-  targetLang: HTMLSelectElement;
-  model: HTMLInputElement;
+  sourceLang: Dropdown;
+  targetLang: Dropdown;
+  model: Dropdown;
   save: HTMLButtonElement;
   status: HTMLElement;
   acctStatus: HTMLElement;
   acctBtn: HTMLButtonElement;
+  keySourceSeg: HTMLElement;
+  ownKeyBlock: HTMLElement;
+  proxyBlock: HTMLElement;
+  proxyHint: HTMLElement;
 }
+
+// Джерело ключа: 'own' — ключ користувача, 'proxy' — серверний через бекенд.
+// Дзеркалить перемикач у popup; обидва пишуть у той самий ключ storage,
+// тому стан завжди узгоджений між панеллю і popup.
+let keySource: string = KEY_SOURCE.own;
 
 // true, поки триває login/logout — щоб не запустити другий флоу подвійним кліком.
 let authBusy = false;
@@ -47,40 +59,60 @@ function buildPanel(): HTMLElement {
       <span id="subtr-acct-status" class="subtr-acct-status"></span>
       <button type="button" id="subtr-acct-btn" class="subtr-acct-btn"></button>
     </div>
-    <label for="subtr-set-apiKey">Gemini API Key</label>
-    <input type="password" id="subtr-set-apiKey" autocomplete="off" placeholder="AIza...">
-    <label for="subtr-set-sourceLang">Мова субтитрів</label>
-    <select id="subtr-set-sourceLang">
-      <option value="English">English</option>
-      <option value="Russian">Російська</option>
-      <option value="Spanish">Іспанська</option>
-      <option value="French">Французька</option>
-      <option value="German">Німецька</option>
-    </select>
-    <label for="subtr-set-targetLang">Перекладати на</label>
-    <select id="subtr-set-targetLang">
-      <option value="Ukrainian">Українська</option>
-      <option value="Russian">Російська</option>
-      <option value="English">Англійська</option>
-    </select>
-    <label for="subtr-set-model">Gemini модель</label>
-    <input type="text" id="subtr-set-model" placeholder="gemini-2.5-flash">
+    <label>Ключ Gemini</label>
+    <div class="subtr-seg" id="subtr-set-keySource">
+      <button type="button" class="subtr-seg-btn active" data-key-source="own">Свій ключ</button>
+      <button type="button" class="subtr-seg-btn" data-key-source="proxy">Вбудований</button>
+    </div>
+    <div id="subtr-set-ownKey">
+      <label for="subtr-set-apiKey">API Key</label>
+      <input type="password" id="subtr-set-apiKey" autocomplete="off" placeholder="AIza...">
+    </div>
+    <div id="subtr-set-proxy" hidden>
+      <div class="subtr-proxy-hint" id="subtr-set-proxyHint"></div>
+    </div>
+    <label>Мова субтитрів</label>
+    <div id="subtr-set-sourceLang"></div>
+    <label>Перекладати на</label>
+    <div id="subtr-set-targetLang"></div>
+    <label>Модель Gemini</label>
+    <div id="subtr-set-model"></div>
     <button type="button" id="subtr-set-save">Зберегти</button>
     <div id="subtr-set-status"></div>
   `;
 
   document.body.appendChild(panel);
 
+  // Кастомні дропдауни (shared/dropdown.ts) монтуємо в порожні контейнери:
+  // нативний <select> малює список засобами ОС і не піддається стилізації.
+  const sourceLang = createDropdown(SOURCE_LANGUAGES, 'English', 'Мова субтитрів');
+  const targetLang = createDropdown(TARGET_LANGUAGES, 'Ukrainian', 'Перекладати на');
+  const model = createDropdown(GEMINI_MODELS, DEFAULT_MODEL, 'Модель Gemini');
+  panel.querySelector('#subtr-set-sourceLang')!.appendChild(sourceLang.el);
+  panel.querySelector('#subtr-set-targetLang')!.appendChild(targetLang.el);
+  panel.querySelector('#subtr-set-model')!.appendChild(model.el);
+
   fields = {
     apiKey: panel.querySelector('#subtr-set-apiKey')!,
-    sourceLang: panel.querySelector('#subtr-set-sourceLang')!,
-    targetLang: panel.querySelector('#subtr-set-targetLang')!,
-    model: panel.querySelector('#subtr-set-model')!,
+    sourceLang,
+    targetLang,
+    model,
     save: panel.querySelector('#subtr-set-save')!,
     status: panel.querySelector('#subtr-set-status')!,
     acctStatus: panel.querySelector('#subtr-acct-status')!,
-    acctBtn: panel.querySelector('#subtr-acct-btn')!
+    acctBtn: panel.querySelector('#subtr-acct-btn')!,
+    keySourceSeg: panel.querySelector('#subtr-set-keySource')!,
+    ownKeyBlock: panel.querySelector('#subtr-set-ownKey')!,
+    proxyBlock: panel.querySelector('#subtr-set-proxy')!,
+    proxyHint: panel.querySelector('#subtr-set-proxyHint')!
   };
+
+  fields.keySourceSeg.querySelectorAll<HTMLElement>('[data-key-source]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      keySource = btn.dataset.keySource!;
+      renderKeySource();
+    });
+  });
 
   // Стартовий стан акаунта тягнемо з воркера (той читає токени зі storage).
   getAuthStatus().then(renderAuth);
@@ -90,17 +122,27 @@ function buildPanel(): HTMLElement {
 
   fields.save.addEventListener('click', async () => {
     const apiKey = fields!.apiKey.value.trim();
-    if (!apiKey) {
+    const authStatus = await getAuthStatus();
+    const loggedIn = !isAuthError(authStatus) && authStatus.loggedIn;
+
+    // Свій ключ обов'язковий лише в режимі 'own' — у режимі проксі перекладає сервер.
+    if (keySource === KEY_SOURCE.own && !apiKey) {
       fields!.status.textContent = MESSAGES.settingsApiKeyRequired;
+      fields!.status.className = 'err';
+      return;
+    }
+    if (keySource === KEY_SOURCE.proxy && !loggedIn) {
+      fields!.status.textContent = MESSAGES.settingsLoginRequired;
       fields!.status.className = 'err';
       return;
     }
 
     const settings = {
       apiKey,
-      sourceLang: fields!.sourceLang.value,
-      targetLang: fields!.targetLang.value,
-      model: fields!.model.value.trim() || DEFAULT_MODEL
+      sourceLang: fields!.sourceLang.getValue(),
+      targetLang: fields!.targetLang.getValue(),
+      model: fields!.model.getValue(),
+      keySource
     };
 
     // Локально завжди (background читає саме storage при кожному перекладі).
@@ -108,8 +150,7 @@ function buildPanel(): HTMLElement {
 
     // Залогінений — дублюємо на акаунт, інакше панель і popup розійшлися б:
     // popup зберігає на бекенд, і при наступному логіні звідти прийшло б старе значення.
-    const status = await getAuthStatus();
-    if (!isAuthError(status) && status.loggedIn) {
+    if (loggedIn) {
       await chrome.runtime.sendMessage({ type: MSG.settingsUpdate, settings });
     }
 
@@ -140,9 +181,36 @@ function loadFieldsFromStorage(): void {
   chrome.storage.local.get([...SETTINGS_KEYS], (data) => {
     if (!fields) return;
     if (data.apiKey) fields.apiKey.value = data.apiKey;
-    if (data.sourceLang) fields.sourceLang.value = data.sourceLang;
-    if (data.targetLang) fields.targetLang.value = data.targetLang;
-    fields.model.value = data.model || DEFAULT_MODEL; // M-6: значення, а не лише placeholder
+    if (data.sourceLang) fields.sourceLang.setValue(data.sourceLang);
+    if (data.targetLang) fields.targetLang.setValue(data.targetLang);
+    fields.model.setValue(data.model || DEFAULT_MODEL); // M-6: значення, а не лише placeholder
+    keySource = data.keySource || KEY_SOURCE.own;
+    renderKeySource();
+  });
+}
+
+// Показує потрібний блок під перемикачем. Вбудований ключ вимагає акаунта:
+// без логіну сервер не має кого рахувати в денній квоті.
+function renderKeySource(): void {
+  if (!fields) return;
+
+  fields.keySourceSeg.querySelectorAll<HTMLElement>('[data-key-source]').forEach((b) => {
+    b.classList.toggle('active', b.dataset.keySource === keySource);
+  });
+
+  const proxy = keySource === KEY_SOURCE.proxy;
+  fields.ownKeyBlock.hidden = proxy;
+  fields.proxyBlock.hidden = !proxy;
+
+  if (!proxy) return;
+
+  getAuthStatus().then((status) => {
+    if (!fields) return;
+    const loggedIn = !isAuthError(status) && status.loggedIn;
+    fields.proxyHint.textContent = loggedIn
+      ? 'Переклад іде через сервер — власний ключ не потрібен.'
+      : 'Потрібно увійти — вбудований ключ доступний лише з акаунтом.';
+    fields.proxyHint.className = loggedIn ? 'subtr-proxy-hint' : 'subtr-proxy-hint warn';
   });
 }
 
