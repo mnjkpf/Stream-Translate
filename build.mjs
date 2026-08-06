@@ -30,7 +30,8 @@ const OUT_DIR = 'dist';
 const STATIC_FILES = [
   ['manifest.json', 'manifest.json'],
   ['assets/overlay.css', 'overlay.css'],
-  ['src/popup/popup.html', 'popup.html']
+  ['src/popup/popup.html', 'popup.html'],
+  ['src/dashboard/dashboard.html', 'dashboard.html']
 ];
 const STATIC_DIRS = [['assets/icons', 'icons']];
 
@@ -43,7 +44,8 @@ await build({
     { in: 'src/content/index.ts', out: 'content' },
     { in: 'src/content/adapters/ytBridge.js', out: 'ytBridge' },
     { in: 'src/background/index.js', out: 'background' },
-    { in: 'src/popup/index.js', out: 'popup' }
+    { in: 'src/popup/index.js', out: 'popup' },
+    { in: 'src/dashboard/index.js', out: 'dashboard' }
   ],
   outdir: OUT_DIR,
   bundle: true,
