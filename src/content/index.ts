@@ -15,6 +15,8 @@ import { createUI, relocateFloatingUI } from './overlay/ui';
 import { setupInteraction } from './overlay/interaction';
 import { onTimeUpdate } from './subtitles/sync';
 import { ensureSettingsButton } from './overlay/settingsPanel';
+import { initKnownWords } from './overlay/knownWords';
+import { setupStudyControls } from './overlay/studyControls';
 
 declare global {
   interface Window {
@@ -52,6 +54,8 @@ async function init(): Promise<void> {
   createUI();
   setupInteraction();
   ensureSettingsButton();
+  initKnownWords();      // підсвічування вже збережених слів у репліках
+  setupStudyControls();  // R — повтор репліки, A — автопауза
 
   // Слідкуємо за timeupdate
   state.video.addEventListener('timeupdate', onTimeUpdate);

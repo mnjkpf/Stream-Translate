@@ -2,6 +2,8 @@
 
 import { state } from '../state';
 import type { Cue } from './subtitleParser';
+import { isKnownWord } from '../overlay/knownWords';
+import { onCueChangedForAutoPause } from '../overlay/studyControls';
 
 export function onTimeUpdate(): void {
   if (state.cues.length === 0) return;
@@ -12,6 +14,7 @@ export function onTimeUpdate(): void {
   if (cue !== state.currentCue) {
     state.currentCue = cue;
     renderCue(cue);
+    onCueChangedForAutoPause(cue); // режим автопаузи, якщо увімкнений клавішею 'a'
   }
 }
 
@@ -54,7 +57,9 @@ export function renderCueText(text: string | null): void {
       // Це слово якщо є хоча б одна літера
       if (/\p{L}/u.test(tok)) {
         const wordEl = document.createElement('span');
-        wordEl.className = 'subtr-word';
+        // Уже збережені слова підсвічуються — видно, що вже вчив, прямо
+        // під час перегляду. Дані вже є локально, додаткових запитів немає.
+        wordEl.className = isKnownWord(tok) ? 'subtr-word subtr-word-known' : 'subtr-word';
         wordEl.textContent = tok;
         wordEl.dataset.word = tok;
         // L-7: доступність — слово можна дійти Tab'ом і активувати з клавіатури

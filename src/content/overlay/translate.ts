@@ -3,7 +3,8 @@
 import { state } from '../state';
 import { MESSAGES } from '../../shared/i18n';
 import { escapeHtml } from '../../shared/utils';
-import { MSG } from '../../shared/messages';
+import { MSG, STORAGE } from '../../shared/messages';
+import { speak, isSpeechSupported } from './studyControls';
 // Циклічний імпорт з interaction.ts (див. коментар там) — безпечно з тих
 // самих причин: обидва боки використовують імпорт лише всередині функцій.
 import { clearSelection } from './interaction';
@@ -58,10 +59,11 @@ export async function translateAndShow(
 
   try {
     const resp: TranslateResponse = await chrome.runtime.sendMessage({
-      type: 'translate',
+      type: MSG.translate,
       text,
       context,
-      mode
+      mode,
+      sourceUrl: location.href // для історії — щоб можна було повернутись до відео
     });
 
     // L-5: поки чекали на відповідь, міг початися новіший запит (швидкий
@@ -105,11 +107,22 @@ function renderWordTooltip(word: string, raw: string, context: string, anchorPos
     <div class="subtr-tt-translation">${escapeHtml(translation)}</div>
     ${example ? `<div class="subtr-tt-example">${escapeHtml(example)}</div>` : ''}
     <div class="subtr-tt-actions">
+      ${isSpeechSupported()
+        ? `<button class="subtr-tt-btn" data-action="speak" title="${escapeHtml(MESSAGES.speakWordTitle)}"`
+          + ` aria-label="${escapeHtml(MESSAGES.speakWordTitle)}">${escapeHtml(MESSAGES.speakWord)}</button>`
+        : ''}
       <button class="subtr-tt-btn" data-action="save">${escapeHtml(MESSAGES.saveWord)}</button>
       <button class="subtr-tt-btn" data-action="close">${escapeHtml(MESSAGES.close)}</button>
     </div>
   `;
   showTooltip(anchorPos, html);
+
+  // Вимова — рідним синтезом браузера: без мережі, без ключа, без квоти.
+  // Читаємо лему (базову форму), а не форму зі субтитрів.
+  state.tooltip!.querySelector('[data-action="speak"]')?.addEventListener('click', async () => {
+    const settings = await chrome.storage.local.get(STORAGE.sourceLang);
+    speak(lemma, settings[STORAGE.sourceLang] || 'English');
+  });
 
   // Обробка кнопок
   // Раніше цей обробник не чекав на відповідь і завжди малював «✓ Збережено» —
