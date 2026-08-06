@@ -10,6 +10,19 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SavedWordsRepository extends JpaRepository<SavedWords, UUID> {
     List<SavedWords> findByUser_Id(UUID userId);
 
+    // Денні лічильники збережених слів — друга серія графіка активності.
+    // Агрегація в SQL із тих самих причин, що і в TranslationHistoryRepository.
+    @org.springframework.data.jpa.repository.Query(value = """
+            SELECT CAST(created_at AT TIME ZONE 'UTC' AS DATE) AS day, COUNT(*) AS total
+            FROM saved_words
+            WHERE user_id = :userId AND created_at >= :since
+            GROUP BY day
+            ORDER BY day
+            """, nativeQuery = true)
+    List<com.streamtranslate.backend.history.TranslationHistoryRepository.DailyCount> countByDay(
+            @org.springframework.data.repository.query.Param("userId") UUID userId,
+            @org.springframework.data.repository.query.Param("since") java.time.Instant since);
+
     List<SavedWords> findByUserIdAndUpdatedAtAfter(UUID userId, Instant since);
 
     Optional<SavedWords> findByIdAndUser_Id(UUID id, UUID userId);
