@@ -6,6 +6,7 @@ import { adapter } from '../adapters/activeAdapter';
 import { state } from '../state';
 import { MESSAGES } from '../../shared/i18n';
 import { showToast } from '../overlay/ui';
+import { showDifficulty } from '../overlay/difficulty';
 import { renderCueText, onTimeUpdate } from './sync';
 import type { SubtitleSource, SubtitleFetchResult } from '../adapters/siteAdapter';
 
@@ -192,4 +193,8 @@ export async function loadCuesFromSource(source: SubtitleSource): Promise<void> 
   if (result.isFallbackLanguage && result.languageCode) {
     showToast(MESSAGES.subtitleFallbackLanguage(result.languageCode));
   }
+
+  // Оцінка складності — щойно є повний текст реплік. Якщо словник ще не
+  // долетів із воркера, difficulty.ts перерахує себе сам за підпискою.
+  showDifficulty();
 }

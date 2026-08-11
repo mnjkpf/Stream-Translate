@@ -2,7 +2,7 @@
 
 import { state } from '../state';
 import type { Cue } from './subtitleParser';
-import { isKnownWord } from '../overlay/knownWords';
+import { knownLevelFor } from '../overlay/knownWords';
 import { onCueChangedForAutoPause } from '../overlay/studyControls';
 
 export function onTimeUpdate(): void {
@@ -57,9 +57,11 @@ export function renderCueText(text: string | null): void {
       // Це слово якщо є хоча б одна літера
       if (/\p{L}/u.test(tok)) {
         const wordEl = document.createElement('span');
-        // Уже збережені слова підсвічуються — видно, що вже вчив, прямо
-        // під час перегляду. Дані вже є локально, додаткових запитів немає.
-        wordEl.className = isKnownWord(tok) ? 'subtr-word subtr-word-known' : 'subtr-word';
+        // Збережені слова підсвічуються градуйовано за рівнем засвоєння —
+        // видно не лише «це ти вчив», а й наскільки воно вже закріплене.
+        // Дані вже є локально, додаткових запитів немає.
+        const level = knownLevelFor(tok);
+        wordEl.className = level ? `subtr-word subtr-word-known subtr-word-${level}` : 'subtr-word';
         wordEl.textContent = tok;
         wordEl.dataset.word = tok;
         // L-7: доступність — слово можна дійти Tab'ом і активувати з клавіатури

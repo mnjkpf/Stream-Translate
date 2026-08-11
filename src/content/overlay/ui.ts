@@ -136,8 +136,16 @@ function getFloatingElements(): HTMLElement[] {
   // Панель налаштувань (settingsPanel.ts) створюється лениво при першому
   // відкритті — getSettingsPanelEl() лишається null до того.
   const settingsPanel = getSettingsPanelEl();
-  return [state.tooltip, state.loadBtn, state.fileInput, state.offsetIndicator, state.toast, settingsPanel]
-    .filter((el): el is HTMLElement => Boolean(el));
+  // Індикатор складності й панель вимови теж ліниві, але, на відміну від
+  // панелі налаштувань, їх модулі не експортують посилання — беремо з DOM.
+  // Пропуск тут коштував би зникнення обох у повноекранному режимі.
+  const lazyPanels = ['subtr-difficulty', 'subtr-pronounce']
+    .map((id) => document.getElementById(id));
+
+  return [
+    state.tooltip, state.loadBtn, state.fileInput, state.offsetIndicator,
+    state.toast, settingsPanel, ...lazyPanels
+  ].filter((el): el is HTMLElement => Boolean(el));
 }
 
 export function relocateFloatingUI(): void {

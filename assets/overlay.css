@@ -84,12 +84,149 @@
   color: #fff;
 }
 
-/* Уже збережене слово — стримане підкреслення, а не заливка: підсвічених слів
+/* Збережене слово — стримане підкреслення, а не заливка: підсвічених слів
    у репліці може бути багато, і фон робив би рядок нечитабельним.
-   Іде перед :hover/.subtr-selected у каскаді, тож ті перебивають підсвітку. */
+   Іде перед :hover/.subtr-selected у каскаді, тож ті перебивають підсвітку.
+
+   Градація за рівнем засвоєння (srsLevel з бекенду): що краще слово вивчене,
+   то тихіше воно звучить візуально. Якби всі три рівні виглядали однаково,
+   підсвітка перетворилась би на суцільний шум, щойно словник трохи виросте. */
 #subtr-subs .subtr-word.subtr-word-known {
-  box-shadow: inset 0 -2px 0 0 rgba(52, 211, 153, .85);
   border-radius: 4px;
+}
+
+/* Щойно збережене, ще не закріплене — найпомітніше, бурштинове. */
+#subtr-subs .subtr-word.subtr-word-new {
+  box-shadow: inset 0 -2px 0 0 rgba(251, 191, 36, .9);
+}
+
+/* У процесі вивчення — зелене, як було раніше для всіх збережених. */
+#subtr-subs .subtr-word.subtr-word-learning {
+  box-shadow: inset 0 -2px 0 0 rgba(52, 211, 153, .85);
+}
+
+/* Засвоєне — ледь помітна крапкова лінія: підтверджує «це ти знаєш»,
+   але не перетягує увагу з нового матеріалу. */
+#subtr-subs .subtr-word.subtr-word-mastered {
+  box-shadow: inset 0 -1px 0 0 rgba(52, 211, 153, .35);
+}
+
+/* ═══ Індикатор складності відео (difficulty.ts) ═══
+   Показується на кілька секунд після завантаження субтитрів, потім ховається
+   сам. Клік — прибрати одразу. Зверху праворуч, щоб не накривати субтитри. */
+#subtr-difficulty {
+  position: fixed;
+  top: 84px;
+  right: 20px;
+  z-index: 2147483646;
+  min-width: 150px;
+  padding: 13px 16px;
+  background: rgba(20, 21, 27, .94);
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 13px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .5);
+  color: #f4f4f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity .18s ease, transform .18s ease, visibility .18s;
+}
+
+#subtr-difficulty.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+#subtr-difficulty .subtr-diff-value {
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+#subtr-difficulty .subtr-diff-label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+#subtr-difficulty .subtr-diff-detail {
+  font-size: 11px;
+  color: rgba(255, 255, 255, .5);
+  margin-top: 5px;
+}
+
+/* Колір несе той самий сигнал, що й текст вироку — але текст лишається
+   головним: на самий лише колір покладатись не можна (дальтонізм). */
+#subtr-difficulty.tone-easy .subtr-diff-value,
+#subtr-difficulty.tone-easy .subtr-diff-label { color: #38bdf8; }
+#subtr-difficulty.tone-good .subtr-diff-value,
+#subtr-difficulty.tone-good .subtr-diff-label { color: #34d399; }
+#subtr-difficulty.tone-hard .subtr-diff-value,
+#subtr-difficulty.tone-hard .subtr-diff-label { color: #fbbf24; }
+#subtr-difficulty.tone-very-hard .subtr-diff-value,
+#subtr-difficulty.tone-very-hard .subtr-diff-label { color: #fb7185; }
+
+/* ═══ Практика вимови (pronunciation.ts) ═══
+   Внизу по центру — там, де людина й так дивиться на субтитри. */
+#subtr-pronounce {
+  position: fixed;
+  bottom: 15%;
+  left: 50%;
+  z-index: 2147483646;
+  max-width: min(720px, 84vw);
+  padding: 15px 20px;
+  background: rgba(20, 21, 27, .95);
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .55);
+  color: #f4f4f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 8px);
+  transition: opacity .18s ease, transform .18s ease, visibility .18s;
+}
+
+#subtr-pronounce.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+#subtr-pronounce .subtr-pron-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+
+#subtr-pronounce .subtr-pron-line {
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+/* Влучив / промазав. Окрім кольору — накреслення й підкреслення, щоб різниця
+   читалась і без розрізнення кольорів. */
+#subtr-pronounce .subtr-pron-hit {
+  color: #34d399;
+  font-weight: 600;
+}
+
+#subtr-pronounce .subtr-pron-miss {
+  color: #fb7185;
+  font-weight: 600;
+  text-decoration: underline wavy rgba(251, 113, 133, .7);
+  text-underline-offset: 4px;
+}
+
+#subtr-pronounce .subtr-pron-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, .45);
+  margin-top: 11px;
 }
 
 /* Tooltip з перекладом */

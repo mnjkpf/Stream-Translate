@@ -18,6 +18,23 @@ export const MESSAGES = {
   replayedLine: '↻ Повтор репліки',
   autoPauseOn: '⏸ Автопауза увімкнена (A — вимкнути)',
   autoPauseOff: '▶ Автопауза вимкнена',
+  // Індикатор складності відео (difficulty.ts). Межі відсотків — у verdict().
+  difficultyEasy: 'Легко для тебе',
+  difficultyGood: 'Саме твій рівень',
+  difficultyHard: 'Складнувато',
+  difficultyVeryHard: 'Дуже складно',
+  difficultyDetail: (known: number, total: number) =>
+    `Знайомих слів: ${known} з ${total}`,
+  // Практика вимови (pronunciation.ts)
+  pronounceListening: '🎤 Говори…',
+  pronounceScore: (score: number) => `Збіглося ${score}%`,
+  pronounceHint: 'P — спробувати ще раз',
+  pronounceNoCue: 'Немає активної репліки для повтору',
+  pronounceUnsupported: 'Браузер не підтримує розпізнавання мовлення',
+  pronounceNoMic: 'Потрібен дозвіл на мікрофон — надай його в адресному рядку',
+  pronounceNoSpeech: 'Нічого не почув — спробуй ще раз',
+  pronounceNetwork: 'Розпізнавання недоступне без інтернету',
+  pronounceFailed: 'Не вдалося розпізнати мовлення',
   saveWordSaving: 'Зберігаю…',
   saveWordDone: '✓ Збережено',
   saveWordFailed: '✕ Не збережено',

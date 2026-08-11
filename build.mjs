@@ -61,7 +61,8 @@ await build({
   entryPoints: [
     { in: 'src/content/subtitles/subtitleParser.ts', out: 'subtitleParser' },
     { in: 'src/content/subtitles/youtubeCaptions.ts', out: 'youtubeCaptions' },
-    { in: 'src/shared/cacheKey.ts', out: 'cacheKey' }
+    { in: 'src/shared/cacheKey.ts', out: 'cacheKey' },
+    { in: 'src/shared/pronunciationMatch.ts', out: 'pronunciationMatch' }
   ],
   outdir: `${OUT_DIR}/test`,
   bundle: true,

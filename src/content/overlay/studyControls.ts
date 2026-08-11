@@ -6,6 +6,7 @@
 import { state } from '../state';
 import { MESSAGES } from '../../shared/i18n';
 import { showToast } from './ui';
+import { startPronunciationPractice } from './pronunciation';
 
 // Автопауза вимикається за замовчуванням: постійні зупинки дратують, якщо
 // людина просто дивиться. Вмикається клавішею і живе лише в межах сторінки.
@@ -99,6 +100,15 @@ export function setupStudyControls(): void {
       e.preventDefault();
       e.stopPropagation();
       toggleAutoPause();
+      return;
+    }
+
+    // 'p' — pronounce: повторити репліку вголос і побачити, що вийшло.
+    // YouTube цю клавішу не використовує, тож конфлікту немає.
+    if (key === 'p') {
+      e.preventDefault();
+      e.stopPropagation();
+      startPronunciationPractice();
     }
   }, true); // capture: YouTube вішає свої обробники й інакше з'їв би подію
 }

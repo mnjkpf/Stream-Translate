@@ -17,6 +17,7 @@ import { onTimeUpdate } from './subtitles/sync';
 import { ensureSettingsButton } from './overlay/settingsPanel';
 import { initKnownWords } from './overlay/knownWords';
 import { setupStudyControls } from './overlay/studyControls';
+import { initDifficulty } from './overlay/difficulty';
 
 declare global {
   interface Window {
@@ -55,7 +56,8 @@ async function init(): Promise<void> {
   setupInteraction();
   ensureSettingsButton();
   initKnownWords();      // підсвічування вже збережених слів у репліках
-  setupStudyControls();  // R — повтор репліки, A — автопауза
+  setupStudyControls();  // R — повтор репліки, A — автопауза, P — вимова
+  initDifficulty();      // % знайомих слів у субтитрах цього відео
 
   // Слідкуємо за timeupdate
   state.video.addEventListener('timeupdate', onTimeUpdate);
