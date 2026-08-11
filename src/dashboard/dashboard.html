@@ -119,6 +119,68 @@
     .empty { text-align: center; color: var(--tr-text-3); font-size: 13px; padding: 36px 0; line-height: 1.6; }
     .note { font-size: 11px; color: var(--tr-text-3); margin-top: 14px; }
 
+    /* ── Повторення (SRS) ─────────────────────────────────────────────── */
+    .review-card { text-align: center; padding: 26px 20px 10px; }
+    .review-word { font-size: 30px; font-weight: 700; letter-spacing: -.4px; }
+    .review-pos { font-size: 12px; color: var(--tr-text-3); margin-top: 6px; }
+    .review-context {
+      font-size: 14px; color: var(--tr-text-2); line-height: 1.6;
+      margin: 20px auto 0; max-width: 560px;
+    }
+    /* Слово, яке повторюємо, підсвічене прямо в реченні з відео — саме
+       контекст робить картку кращою за звичайну двосторонню картку. */
+    .review-context b { color: var(--tr-text); background: rgba(129,140,248,.18);
+                        padding: 1px 5px; border-radius: 5px; font-weight: 600; }
+    .review-answer {
+      margin: 22px auto 0; max-width: 560px; padding-top: 20px;
+      border-top: 1px solid var(--tr-border);
+    }
+    .review-translation { font-size: 20px; font-weight: 600; color: var(--tr-success); }
+    .review-example { font-size: 13px; color: var(--tr-text-3); margin-top: 10px; font-style: italic; }
+    .review-source { display: inline-block; margin-top: 14px; font-size: 12px;
+                     color: var(--tr-accent); text-decoration: none; }
+    .review-source:hover { text-decoration: underline; }
+
+    .btn-primary {
+      padding: 11px 30px; background: var(--tr-accent-grad); border: none;
+      border-radius: 10px; color: #fff; font-size: 14px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+    }
+    .grades { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+    .grade {
+      flex: 1; min-width: 96px; max-width: 150px; padding: 11px 10px;
+      background: rgba(255,255,255,.05); border: 1px solid var(--tr-border);
+      border-radius: 10px; color: var(--tr-text-2); font-family: inherit;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background var(--tr-dur), color var(--tr-dur), border-color var(--tr-dur);
+    }
+    .grade:hover { background: rgba(255,255,255,.09); color: var(--tr-text); }
+    .grade small { display: block; font-size: 10px; font-weight: 500;
+                   color: var(--tr-text-3); margin-top: 3px; }
+    .grade-again:hover { border-color: rgba(251,113,133,.6); }
+    .grade-easy:hover  { border-color: rgba(52,211,153,.6); }
+    .review-progress { font-size: 12px; color: var(--tr-text-3); }
+
+    /* ── Часті пошуки ─────────────────────────────────────────────────── */
+    .freq-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 11px 0; border-bottom: 1px solid var(--tr-border);
+    }
+    .freq-main { flex: 1; min-width: 0; }
+    .freq-word { font-size: 14px; font-weight: 600; }
+    .freq-tr { font-size: 13px; color: var(--tr-text-2); margin-top: 2px; }
+    .freq-count {
+      flex: none; font-size: 11px; font-weight: 600; color: var(--tr-accent);
+      background: rgba(129,140,248,.14); padding: 3px 9px; border-radius: 999px;
+    }
+    .freq-save {
+      flex: none; padding: 7px 14px; background: rgba(255,255,255,.05);
+      border: 1px solid var(--tr-border); border-radius: 9px; color: var(--tr-text-2);
+      font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer;
+    }
+    .freq-save:hover:not(:disabled) { background: rgba(255,255,255,.09); color: var(--tr-text); }
+    .freq-save:disabled { opacity: .5; cursor: default; }
+
     @media (max-width: 640px) { .totals { grid-template-columns: repeat(2, 1fr); } }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
@@ -145,6 +207,25 @@
         <div class="total"><div class="total-value" id="totalWords">0</div><div class="total-label">Збережено слів</div></div>
         <div class="total"><div class="total-value" id="activeDays">0</div><div class="total-label">Активних днів</div></div>
         <div class="total"><div class="total-value" id="bestStreak">0</div><div class="total-label">Найдовша серія</div></div>
+      </div>
+
+      <!-- Повторення — найперше на сторінці: це єдиний блок, який вимагає
+           дії просто зараз, решта лише показує, що вже сталось. -->
+      <div class="card" id="reviewCard">
+        <div class="card-head">
+          <div class="card-title">Повторення</div>
+          <div class="review-progress" id="reviewProgress"></div>
+        </div>
+        <div id="reviewBody"></div>
+      </div>
+
+      <!-- Часті пошуки: показуємо, лише коли є що показати (див. index.js) -->
+      <div class="card" id="frequentCard" hidden>
+        <div class="card-head">
+          <div class="card-title">Ти постійно це шукаєш</div>
+        </div>
+        <div id="frequentList"></div>
+        <div class="note">Слова, які ти перекладав кілька разів, але не зберіг.</div>
       </div>
 
       <div class="card">
