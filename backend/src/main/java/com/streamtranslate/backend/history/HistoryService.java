@@ -87,7 +87,10 @@ public class HistoryService {
     private static Map<LocalDate, Long> toMap(List<TranslationHistoryRepository.DailyCount> rows) {
         Map<LocalDate, Long> map = new HashMap<>();
         for (TranslationHistoryRepository.DailyCount row : rows) {
-            map.put(row.getDay().toLocalDate(), row.getTotal());
+            // getDay() — 'YYYY-MM-DD' TEXT з БД (див. коментар над countByDay у
+            // TranslationHistoryRepository). LocalDate.parse не зачіпає жодного часового
+            // поясу, на відміну від java.sql.Date, який раніше лежав тут.
+            map.put(LocalDate.parse(row.getDay()), row.getTotal());
         }
         return map;
     }

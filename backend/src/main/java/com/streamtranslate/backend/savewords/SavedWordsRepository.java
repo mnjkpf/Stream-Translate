@@ -12,8 +12,10 @@ public interface SavedWordsRepository extends JpaRepository<SavedWords, UUID> {
 
     // Денні лічильники збережених слів — друга серія графіка активності.
     // Агрегація в SQL із тих самих причин, що і в TranslationHistoryRepository.
+    // День — TEXT (TO_CHAR), не CAST(...AS DATE): те саме застереження щодо
+    // java.sql.Date і часового поясу JVM, що й у TranslationHistoryRepository.countByDay.
     @org.springframework.data.jpa.repository.Query(value = """
-            SELECT CAST(created_at AT TIME ZONE 'UTC' AS DATE) AS day, COUNT(*) AS total
+            SELECT TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day, COUNT(*) AS total
             FROM saved_words
             WHERE user_id = :userId AND created_at >= :since
             GROUP BY day

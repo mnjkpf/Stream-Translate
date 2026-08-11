@@ -30,8 +30,17 @@ public interface TranslationHistoryRepository extends JpaRepository<TranslationH
     // Денні лічильники для графіка. Агрегуємо в SQL, а не тягнемо рядки в застосунок:
     // за 90 днів активного користування це десятки тисяч записів, які клієнту не потрібні.
     // Дата рахується в UTC — той самий пояс, у якому лежать TIMESTAMPTZ.
+    //
+    // День віддаємо як TEXT (TO_CHAR), а не CAST(... AS DATE): проєкція нативного запиту
+    // читає стовпець через звичайний JDBC ResultSet.getDate(), а той конструює java.sql.Date
+    // за часовим поясом JVM за замовчуванням (він тут ніде не запінений на UTC — лише
+    // hibernate.jdbc.time_zone, а це інша, Hibernate-специфічна властивість, яка на цей
+    // шлях читання не поширюється). День у БД полічений рівно у UTC, тож при іншому поясі
+    // JVM символьне значення дня і те, що прочитає java.sql.Date, можуть розійтись. TEXT
+    // такої неоднозначності не має: 'YYYY-MM-DD' парситься назад через LocalDate.parse без
+    // жодного часового поясу в грі.
     @Query(value = """
-            SELECT CAST(created_at AT TIME ZONE 'UTC' AS DATE) AS day, COUNT(*) AS total
+            SELECT TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day, COUNT(*) AS total
             FROM translation_history
             WHERE user_id = :userId AND created_at >= :since
             GROUP BY day
@@ -43,9 +52,10 @@ public interface TranslationHistoryRepository extends JpaRepository<TranslationH
     @Query("DELETE FROM TranslationHistory h WHERE h.createdAt < :cutoff")
     int deleteOlderThan(@Param("cutoff") Instant cutoff);
 
-    // Проєкція для нативного запиту вище.
+    // Проєкція для нативного запиту вище. День — String ('YYYY-MM-DD'), не java.sql.Date
+    // (див. коментар над countByDay).
     interface DailyCount {
-        java.sql.Date getDay();
+        String getDay();
 
         long getTotal();
     }
