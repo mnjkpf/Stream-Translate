@@ -113,6 +113,11 @@ export interface SavedWord {
   sourceUrl: string | null;
   createdAt: string;
   updatedAt: string;
+  // Стан інтервальних повторень. Приходить у КОЖНІЙ відповіді зі словом
+  // (не лише в /review/due), бо підсвічування в субтитрах будує градацію
+  // саме з srsLevel і бере список зі звичайного GET /words.
+  srsLevel: number;
+  dueAt: string | null;
 }
 
 // Дані для збереження слова на бекенді (POST /words). Формат бекендного WordRequest.
@@ -321,6 +326,65 @@ export async function getStats(days: number): Promise<StatsPoint[]> {
   const resp = await apiFetch(`/stats?days=${days}`);
   if (!resp.ok) throw new Error(`GET /stats -> ${resp.status}`);
   return (await resp.json()) as StatsPoint[];
+}
+
+// ─── Інтервальні повторення (SRS) ────────────────────────────────────────────
+
+// Оцінка пригадування. Назви, а не числа: 'again' лишається 'again' незалежно
+// від того, як бекенд згодом перерахує інтервали.
+export type ReviewGrade = 'again' | 'hard' | 'good' | 'easy';
+
+export interface ReviewCount {
+  due: number;      // готові до повторення ЗАРАЗ
+  total: number;    // усього слів в акаунті
+  mastered: number; // srsLevel >= 5
+}
+
+// Картки на повторення. Ліміт свідомо малий: сенс SRS у коротких регулярних
+// сесіях, а не в марафоні на 300 слів, після якого людина кидає.
+export async function listDueCards(limit = 20): Promise<SavedWord[]> {
+  const resp = await apiFetch(`/review/due?limit=${limit}`);
+  if (!resp.ok) throw new Error(`GET /review/due -> ${resp.status}`);
+  return (await resp.json()) as SavedWord[];
+}
+
+// Наступний інтервал рахує СЕРВЕР: клієнт лише повідомляє, як згадалось.
+// Інакше два пристрої з різними версіями розширення планували б по-різному.
+export async function gradeCard(id: string, grade: ReviewGrade): Promise<SavedWord> {
+  const resp = await apiFetch(`/review/${id}`, {
+    method: 'POST',
+    body: JSON.stringify({ grade })
+  });
+  if (!resp.ok) throw new Error(`POST /review/${id} -> ${resp.status}`);
+  return (await resp.json()) as SavedWord;
+}
+
+export async function getReviewCount(): Promise<ReviewCount> {
+  const resp = await apiFetch('/review/count');
+  if (!resp.ok) throw new Error(`GET /review/count -> ${resp.status}`);
+  return (await resp.json()) as ReviewCount;
+}
+
+// ─── Часті пошуки ────────────────────────────────────────────────────────────
+
+export interface FrequentLookup {
+  text: string;
+  count: number;
+  translation: string;  // останній переклад — щоб зберегти слово без нового запиту до Gemini
+  sourceLang: string;
+  targetLang: string;
+  sourceUrl: string | null;
+  lastSeenAt: string;
+}
+
+// Слова, які користувач шукав багато разів і жодного разу не зберіг — це
+// найсильніший сигнал «варто вчити», і він уже лежить в історії. Фільтрацію
+// вже збережених робить бекенд: інакше клієнт мусив би тягнути весь словник
+// лише щоб відняти одну множину від іншої.
+export async function getFrequentLookups(days = 30, min = 3): Promise<FrequentLookup[]> {
+  const resp = await apiFetch(`/history/frequent?days=${days}&min=${min}&limit=20`);
+  if (!resp.ok) throw new Error(`GET /history/frequent -> ${resp.status}`);
+  return (await resp.json()) as FrequentLookup[];
 }
 
 // Копіює apiKey/sourceLang/targetLang/model з акаунта у chrome.storage.local.

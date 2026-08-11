@@ -10,7 +10,8 @@ import {
   login, logout, getStatus, apiFetch,
   getMe, updateSettings, deleteWord, saveWordRemote, bumpWordsRevision,
   translateViaProxy, getProxyQuota,
-  recordHistory, listHistory, getStats
+  recordHistory, listHistory, getStats,
+  listDueCards, gradeCard, getReviewCount, getFrequentLookups
 } from '../api/backendAuth';
 import { MSG, STORAGE, KEY_SOURCE } from '../shared/messages';
 
@@ -43,7 +44,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === MSG.saveWord) {
-    saveWord(msg.word, msg.translation, msg.context, msg.pos, msg.example)
+    saveWord(msg.word, msg.translation, msg.context, msg.pos, msg.example, msg.sourceUrl)
       .then(sendResponse)
       .catch(err => {
         console.error('Save word error:', err);
@@ -148,6 +149,53 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  // Інтервальні повторення.
+  if (msg.type === MSG.reviewDue) {
+    listDueCards(msg.limit || 20)
+      .then(cards => ({ cards }))
+      .then(sendResponse)
+      .catch(err => {
+        console.error('Review due error:', err);
+        sendResponse({ error: err.message || String(err) });
+      });
+    return true;
+  }
+
+  if (msg.type === MSG.reviewGrade) {
+    gradeCard(msg.id, msg.grade)
+      // Оцінка змінює srsLevel, а від нього залежить градація підсвітки
+      // в субтитрах — тож сигналимо контекстам перечитати список слів.
+      .then(async (card) => { await bumpWordsRevision(); return { card }; })
+      .then(sendResponse)
+      .catch(err => {
+        console.error('Review grade error:', err);
+        sendResponse({ error: err.message || String(err) });
+      });
+    return true;
+  }
+
+  if (msg.type === MSG.reviewCount) {
+    getReviewCount()
+      .then(count => ({ count }))
+      .then(sendResponse)
+      .catch(err => {
+        console.error('Review count error:', err);
+        sendResponse({ error: err.message || String(err) });
+      });
+    return true;
+  }
+
+  if (msg.type === MSG.frequentGet) {
+    getFrequentLookups(msg.days || 30, msg.min || 3)
+      .then(frequent => ({ frequent }))
+      .then(sendResponse)
+      .catch(err => {
+        console.error('Frequent lookups error:', err);
+        sendResponse({ error: err.message || String(err) });
+      });
+    return true;
+  }
+
   if (msg.type === MSG.settingsUpdate) {
     updateSettings(msg.settings)
       .then(me => ({ me }))
@@ -182,7 +230,7 @@ async function handleTranslate({ text, context, mode, sourceUrl }) {
   if (cached[cacheKey]) {
     // Попадання в кеш — теж дія користувача, тож в історію воно йде так само:
     // історія відображає активність навчання, а не витрати на API.
-    logHistory({ text, translation: cached[cacheKey], mode, sourceLang, targetLang, sourceUrl });
+    logHistory({ text, translation: historyTranslation(mode, cached[cacheKey]), mode, sourceLang, targetLang, sourceUrl });
     return { translation: cached[cacheKey], cached: true };
   }
 
@@ -207,7 +255,7 @@ async function handleTranslate({ text, context, mode, sourceUrl }) {
     await chrome.storage.local.set({ [cacheKey]: translation });
   }
 
-  logHistory({ text, translation, mode, sourceLang, targetLang, sourceUrl });
+  logHistory({ text, translation: historyTranslation(mode, translation), mode, sourceLang, targetLang, sourceUrl });
   return { translation, cached: false };
 }
 
@@ -216,6 +264,19 @@ async function handleTranslate({ text, context, mode, sourceUrl }) {
 // або бекенд лежить, recordHistory тихо ковтає помилку.
 function logHistory(entry) {
   recordHistory({ ...entry, sourceUrl: entry.sourceUrl || null });
+}
+
+// Word-режим повертає від Gemini службовий формат
+// "LEMMA: ...\nPOS: ...\nTRANSLATION: ...\nEXAMPLE: ..." — tooltip (translate.ts)
+// парсить його на поля для показу. Кеш і повернене tooltip'у значення мають лишитись
+// у цьому сирому форматі (інакше tooltip показувати нічого), а от в історію має йти
+// лише сам переклад — інакше на сторінці статистики видно службові LEMMA/POS/EXAMPLE
+// замість людського перекладу. Той самий формат повертає й проксі (PromptBuilder на
+// бекенді будує ідентичний промпт), тож обробка не залежить від джерела ключа.
+function historyTranslation(mode, raw) {
+  if (mode !== 'word') return raw;
+  const m = /^TRANSLATION:\s*(.+)$/im.exec(raw);
+  return m ? m[1].trim() : raw;
 }
 
 function buildPrompt(text, context, mode, sourceLang, targetLang) {
@@ -318,10 +379,10 @@ async function callGemini(prompt, apiKey, model) {
 // чекав на завершення (успішне чи ні) попереднього перед своїм read-modify-write.
 let saveWordChain = Promise.resolve();
 
-function saveWord(word, translation, context, pos, example) {
+function saveWord(word, translation, context, pos, example, sourceUrl) {
   const result = saveWordChain.then(
-    () => doSaveWord(word, translation, context, pos, example),
-    () => doSaveWord(word, translation, context, pos, example)
+    () => doSaveWord(word, translation, context, pos, example, sourceUrl),
+    () => doSaveWord(word, translation, context, pos, example, sourceUrl)
   );
   // Ланцюг не має лишитись "відхиленим" назавжди — інакше всі наступні
   // збереження чекатимуть на проміс, що вже ніколи не вирішиться в успіх
@@ -331,7 +392,7 @@ function saveWord(word, translation, context, pos, example) {
 
 // Залогінений -> слово йде на бекенд (з'явиться у списку акаунта, синхронізується
 // між пристроями). Розлогінений -> локальний wordbook, як раніше (offline-fallback).
-async function doSaveWord(word, translation, context, pos, example) {
+async function doSaveWord(word, translation, context, pos, example, sourceUrl) {
   const status = await getStatus();
   if (status.loggedIn) {
     const s = await chrome.storage.local.get([STORAGE.sourceLang, STORAGE.targetLang]);
@@ -346,7 +407,10 @@ async function doSaveWord(word, translation, context, pos, example) {
       sourceLang: s[STORAGE.sourceLang] || 'English',
       targetLang: s[STORAGE.targetLang] || 'Ukrainian',
       context: context || null,
-      sourceUrl: null
+      // Колонка існувала від початку, але сюди жорстко йшов null — збережені
+      // слова втрачали зв'язок з відео. Без нього картка повторення не може
+      // відправити назад до моменту, де слово зустрілось.
+      sourceUrl: sourceUrl || null
     });
     await bumpWordsRevision(); // popup/панель перечитають список без перезавантаження
     return { ok: true, remote: true };

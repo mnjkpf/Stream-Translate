@@ -20,8 +20,32 @@ export const MSG = {
   quotaGet: 'quota:get',
 
   historyList: 'history:list',
-  statsGet: 'stats:get'
+  statsGet: 'stats:get',
+
+  // Інтервальні повторення (SRS)
+  reviewDue: 'review:due',
+  reviewGrade: 'review:grade',
+  reviewCount: 'review:count',
+
+  // «Ти постійно це шукаєш» — часті пошуки, які так і не збережені
+  frequentGet: 'frequent:get'
 } as const;
+
+// Рівні засвоєння для підсвічування в субтитрах. Межі — по srsLevel з бекенду.
+// Сенс градації: слово, яке ти щойно зберіг, має привертати увагу, а вже
+// вивчене — лише ненав'язливо підтверджувати «це ти знаєш». Однаковий колір
+// для обох перетворював би підсвітку на шум, щойно словник трохи виросте.
+export const KNOWN_LEVEL = {
+  new: 'new',           // srsLevel 0-1 — щойно збережене, ще не закріплене
+  learning: 'learning', // srsLevel 2-4 — у процесі
+  mastered: 'mastered'  // srsLevel 5+ — засвоєне
+} as const;
+
+export function knownLevelOf(srsLevel: number): string {
+  if (srsLevel >= 5) return KNOWN_LEVEL.mastered;
+  if (srsLevel >= 2) return KNOWN_LEVEL.learning;
+  return KNOWN_LEVEL.new;
+}
 
 // Звідки береться ключ Gemini. 'own' — ключ користувача зі storage (працює
 // офлайн і без логіну); 'proxy' — серверний ключ через наш бекенд (потребує

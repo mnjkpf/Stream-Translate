@@ -139,7 +139,10 @@ function renderWordTooltip(word: string, raw: string, context: string, anchorPos
         translation,
         context,
         pos,      // для бекенду (POST /words) — на локальний wordbook не впливає
-        example
+        example,
+        // Посилання на відео: картка повторення зможе відправити назад
+        // до моменту, де слово зустрілось.
+        sourceUrl: location.href
       });
 
       // Кнопка живе в tooltip, який міг уже змінитись під наступний переклад.
