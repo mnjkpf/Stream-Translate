@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*_BRIEF*.md
+*_REPORT*.md
+config.local.*
+.DS_Store
+BACKEND_ARCHITECTURE.md
