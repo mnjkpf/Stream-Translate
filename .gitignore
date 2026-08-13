@@ -6,3 +6,4 @@ dist/
 config.local.*
 .DS_Store
 BACKEND_ARCHITECTURE.md
+docs/ARCHITECTURE.md
