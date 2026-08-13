@@ -1,0 +1,864 @@
+/* Дизайн-токени. Префікс --subtr- уникає колізій з хостовою сторінкою. */
+:root {
+  --subtr-accent-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --subtr-accent: #818cf8;
+  --subtr-accent-2: #a78bfa;
+  --subtr-accent-soft: rgba(129, 140, 248, .16);
+  --subtr-accent-ring: rgba(129, 140, 248, .40);
+  --subtr-success: #34d399;
+  --subtr-danger: #fb7185;
+  --subtr-text: #f4f4f5;
+  --subtr-text-2: #b7b8c4;
+  --subtr-text-3: #83848f;
+  --subtr-surface: rgba(18, 19, 26, .72);
+  --subtr-surface-2: rgba(30, 31, 42, .72);
+  --subtr-border: rgba(255, 255, 255, .10);
+  --subtr-border-strong: rgba(255, 255, 255, .18);
+  --subtr-r-sm: 8px;
+  --subtr-r-md: 12px;
+  --subtr-r-lg: 16px;
+  --subtr-pill: 999px;
+  --subtr-sh-1: 0 4px 14px rgba(0, 0, 0, .35);
+  --subtr-sh-2: 0 18px 44px rgba(0, 0, 0, .52);
+  --subtr-blur: blur(18px) saturate(1.4);
+  --subtr-dur: 150ms;
+  --subtr-ease: cubic-bezier(.2, .7, .2, 1);
+  --subtr-font: -apple-system, 'Segoe UI', Roboto, system-ui, sans-serif;
+}
+
+/* Контейнер субтитрів поверх відео */
+#subtr-subs {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  z-index: 2147483645;
+  pointer-events: none;
+  text-align: center;
+  max-width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  font-family: var(--subtr-font);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: .2px;
+  color: #fff;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+#subtr-subs .subtr-line {
+  display: inline-block;
+  margin: 0;
+  padding: 3px 14px;
+  background: rgba(10, 11, 16, .44);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border-radius: var(--subtr-r-md);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .6);
+  box-sizing: border-box;
+}
+
+#subtr-subs .subtr-word {
+  display: inline-block;
+  box-sizing: border-box;
+  padding: 0 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  pointer-events: auto;
+  color: inherit;
+  background: transparent;
+  transition: background var(--subtr-dur) var(--subtr-ease), color var(--subtr-dur) var(--subtr-ease);
+}
+
+#subtr-subs .subtr-word:hover {
+  background: var(--subtr-accent-soft);
+  color: #c7d2fe;
+}
+
+#subtr-subs .subtr-word.subtr-selected {
+  background: var(--subtr-accent-grad);
+  color: #fff;
+}
+
+/* Збережене слово — стримане підкреслення, а не заливка: підсвічених слів
+   у репліці може бути багато, і фон робив би рядок нечитабельним.
+   Іде перед :hover/.subtr-selected у каскаді, тож ті перебивають підсвітку.
+
+   Градація за рівнем засвоєння (srsLevel з бекенду): що краще слово вивчене,
+   то тихіше воно звучить візуально. Якби всі три рівні виглядали однаково,
+   підсвітка перетворилась би на суцільний шум, щойно словник трохи виросте. */
+#subtr-subs .subtr-word.subtr-word-known {
+  border-radius: 4px;
+}
+
+/* Щойно збережене, ще не закріплене — найпомітніше, бурштинове. */
+#subtr-subs .subtr-word.subtr-word-new {
+  box-shadow: inset 0 -2px 0 0 rgba(251, 191, 36, .9);
+}
+
+/* У процесі вивчення — зелене, як було раніше для всіх збережених. */
+#subtr-subs .subtr-word.subtr-word-learning {
+  box-shadow: inset 0 -2px 0 0 rgba(52, 211, 153, .85);
+}
+
+/* Засвоєне — ледь помітна крапкова лінія: підтверджує «це ти знаєш»,
+   але не перетягує увагу з нового матеріалу. */
+#subtr-subs .subtr-word.subtr-word-mastered {
+  box-shadow: inset 0 -1px 0 0 rgba(52, 211, 153, .35);
+}
+
+/* ═══ Індикатор складності відео (difficulty.ts) ═══
+   Показується на кілька секунд після завантаження субтитрів, потім ховається
+   сам. Клік — прибрати одразу. Зверху праворуч, щоб не накривати субтитри. */
+#subtr-difficulty {
+  position: fixed;
+  top: 84px;
+  right: 20px;
+  z-index: 2147483646;
+  min-width: 150px;
+  padding: 13px 16px;
+  background: rgba(20, 21, 27, .94);
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 13px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .5);
+  color: #f4f4f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity .18s ease, transform .18s ease, visibility .18s;
+}
+
+#subtr-difficulty.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+#subtr-difficulty .subtr-diff-value {
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+#subtr-difficulty .subtr-diff-label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+#subtr-difficulty .subtr-diff-detail {
+  font-size: 11px;
+  color: rgba(255, 255, 255, .5);
+  margin-top: 5px;
+}
+
+/* Колір несе той самий сигнал, що й текст вироку — але текст лишається
+   головним: на самий лише колір покладатись не можна (дальтонізм). */
+#subtr-difficulty.tone-easy .subtr-diff-value,
+#subtr-difficulty.tone-easy .subtr-diff-label { color: #38bdf8; }
+#subtr-difficulty.tone-good .subtr-diff-value,
+#subtr-difficulty.tone-good .subtr-diff-label { color: #34d399; }
+#subtr-difficulty.tone-hard .subtr-diff-value,
+#subtr-difficulty.tone-hard .subtr-diff-label { color: #fbbf24; }
+#subtr-difficulty.tone-very-hard .subtr-diff-value,
+#subtr-difficulty.tone-very-hard .subtr-diff-label { color: #fb7185; }
+
+/* ═══ Практика вимови (pronunciation.ts) ═══
+   Внизу по центру — там, де людина й так дивиться на субтитри. */
+#subtr-pronounce {
+  position: fixed;
+  bottom: 15%;
+  left: 50%;
+  z-index: 2147483646;
+  max-width: min(720px, 84vw);
+  padding: 15px 20px;
+  background: rgba(20, 21, 27, .95);
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .55);
+  color: #f4f4f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 8px);
+  transition: opacity .18s ease, transform .18s ease, visibility .18s;
+}
+
+#subtr-pronounce.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+#subtr-pronounce .subtr-pron-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+
+#subtr-pronounce .subtr-pron-line {
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+/* Влучив / промазав. Окрім кольору — накреслення й підкреслення, щоб різниця
+   читалась і без розрізнення кольорів. */
+#subtr-pronounce .subtr-pron-hit {
+  color: #34d399;
+  font-weight: 600;
+}
+
+#subtr-pronounce .subtr-pron-miss {
+  color: #fb7185;
+  font-weight: 600;
+  text-decoration: underline wavy rgba(251, 113, 133, .7);
+  text-underline-offset: 4px;
+}
+
+#subtr-pronounce .subtr-pron-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, .45);
+  margin-top: 11px;
+}
+
+/* Tooltip з перекладом */
+#subtr-tooltip {
+  position: fixed;
+  z-index: 2147483646;
+  box-sizing: border-box;
+  background: var(--subtr-surface);
+  -webkit-backdrop-filter: var(--subtr-blur);
+  backdrop-filter: var(--subtr-blur);
+  color: var(--subtr-text);
+  padding: 15px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--subtr-border);
+  box-shadow: var(--subtr-sh-2);
+  font-family: var(--subtr-font);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-transform: none;
+  min-width: 200px;
+  max-width: 360px;
+  pointer-events: auto;
+  user-select: text;
+  display: none;
+  opacity: 0;
+  transform: translateY(6px) scale(.98);
+  transition: opacity var(--subtr-dur) var(--subtr-ease),
+              transform var(--subtr-dur) var(--subtr-ease);
+}
+
+#subtr-tooltip.visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+#subtr-tooltip .subtr-tt-word {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--subtr-text);
+  margin-bottom: 4px;
+}
+
+#subtr-tooltip .subtr-tt-meta {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  text-transform: none;
+  color: #c7d2fe;
+  background: var(--subtr-accent-soft);
+  padding: 3px 9px;
+  border-radius: var(--subtr-pill);
+  margin-bottom: 6px;
+}
+
+#subtr-tooltip .subtr-tt-translation {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #eef;
+  margin-bottom: 6px;
+}
+
+#subtr-tooltip .subtr-tt-example {
+  font-size: 12.5px;
+  line-height: 1.4;
+  font-style: italic;
+  color: var(--subtr-text-2);
+  border-left: 2px solid var(--subtr-accent);
+  border-radius: 0;
+  padding-left: 10px;
+  margin-top: 11px;
+}
+
+#subtr-tooltip .subtr-tt-loading {
+  color: var(--subtr-text-3);
+  font-style: italic;
+}
+
+#subtr-tooltip .subtr-tt-error {
+  color: var(--subtr-danger);
+  font-size: 12px;
+}
+
+#subtr-tooltip .subtr-tt-actions {
+  margin-top: 13px;
+  display: flex;
+  gap: 8px;
+}
+
+#subtr-tooltip .subtr-tt-btn {
+  box-sizing: border-box;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--subtr-border);
+  color: var(--subtr-text-2);
+  border-radius: var(--subtr-pill);
+  cursor: pointer;
+  font-family: var(--subtr-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1;
+  transition: background var(--subtr-dur) var(--subtr-ease),
+              color var(--subtr-dur) var(--subtr-ease),
+              border-color var(--subtr-dur) var(--subtr-ease);
+}
+
+#subtr-tooltip .subtr-tt-btn:hover {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+}
+
+#subtr-tooltip .subtr-tt-btn[data-action="save"]:hover {
+  background: var(--subtr-accent-grad);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* Кнопка завантаження SRT */
+#subtr-load-btn {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 2147483644;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--subtr-surface);
+  -webkit-backdrop-filter: var(--subtr-blur);
+  backdrop-filter: var(--subtr-blur);
+  color: var(--subtr-text);
+  border: 1px solid var(--subtr-border);
+  padding: 9px 15px;
+  border-radius: var(--subtr-pill);
+  cursor: pointer;
+  font-family: var(--subtr-font);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1;
+  box-shadow: var(--subtr-sh-1);
+  transition: transform var(--subtr-dur) var(--subtr-ease),
+              border-color var(--subtr-dur) var(--subtr-ease),
+              background var(--subtr-dur) var(--subtr-ease);
+}
+
+#subtr-load-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--subtr-border-strong);
+  background: var(--subtr-surface-2);
+}
+
+#subtr-load-btn.has-subs {
+  color: #d7fbe9;
+}
+
+#subtr-load-btn.has-subs::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--subtr-success);
+  box-shadow: 0 0 8px var(--subtr-success);
+}
+
+/* Контроль зсуву (offset) */
+#subtr-offset {
+  position: fixed;
+  top: 128px;
+  right: 20px;
+  z-index: 2147483644;
+  box-sizing: border-box;
+  background: var(--subtr-surface);
+  -webkit-backdrop-filter: var(--subtr-blur);
+  backdrop-filter: var(--subtr-blur);
+  color: var(--subtr-text-2);
+  border: 1px solid var(--subtr-border);
+  padding: 7px 12px;
+  border-radius: var(--subtr-pill);
+  box-shadow: var(--subtr-sh-1);
+  font-family: var(--subtr-font);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.4;
+  display: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity var(--subtr-dur) var(--subtr-ease),
+              transform var(--subtr-dur) var(--subtr-ease);
+}
+
+#subtr-offset.visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* L-8: toast для помилок — заміна блокуючого alert() */
+#subtr-toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483646;
+  box-sizing: border-box;
+  max-width: 360px;
+  background: rgba(60, 22, 30, .82);
+  -webkit-backdrop-filter: var(--subtr-blur);
+  backdrop-filter: var(--subtr-blur);
+  color: #ffe4e6;
+  padding: 10px 16px;
+  border-radius: var(--subtr-r-md);
+  border: 1px solid rgba(251, 113, 133, .4);
+  font-family: var(--subtr-font);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.4;
+  box-shadow: var(--subtr-sh-2);
+  display: none;
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+  transition: opacity var(--subtr-dur) var(--subtr-ease),
+              transform var(--subtr-dur) var(--subtr-ease);
+}
+
+#subtr-toast.visible {
+  display: block;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* §2.3.B (CLAUDE_CODE_BRIEF_YT_FIXES.md): кнопка налаштувань у панелі
+   керування плеєра YouTube. class="ytp-button" дає розмір/поведінку під
+   нативний 48px-ряд контролів — тут лише центруємо власну SVG-іконку й не
+   ламаємо вигляд сусідніх кнопок (той самий white/opacity-паттерн, що й
+   нативні ytp-button). */
+.subtr-yt-settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  opacity: .9;
+  transition: opacity var(--subtr-dur) var(--subtr-ease);
+}
+
+.subtr-yt-settings-btn:hover {
+  opacity: 1;
+}
+
+.subtr-yt-settings-btn svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+/* Панель налаштувань (§2.3.A) — дзеркало полів popup.html, змонтована у
+   fullscreen-корінь так само, як tooltip (C-1, ui.js relocateFloatingUI). */
+#subtr-settings {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 2147483646;
+  box-sizing: border-box;
+  width: 280px;
+  background: var(--subtr-surface);
+  -webkit-backdrop-filter: var(--subtr-blur);
+  backdrop-filter: var(--subtr-blur);
+  color: var(--subtr-text);
+  padding: 18px;
+  border-radius: var(--subtr-r-lg);
+  border: 1px solid var(--subtr-border);
+  box-shadow: var(--subtr-sh-2);
+  font-family: var(--subtr-font);
+  pointer-events: auto;
+  display: none;
+  opacity: 0;
+  transform: translateY(6px) scale(.98);
+  transition: opacity var(--subtr-dur) var(--subtr-ease),
+              transform var(--subtr-dur) var(--subtr-ease);
+}
+
+#subtr-settings.visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+#subtr-settings .subtr-settings-head {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--subtr-text);
+}
+
+#subtr-settings .subtr-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--subtr-border);
+}
+
+#subtr-settings .subtr-acct-status {
+  font-size: 12px;
+  color: var(--subtr-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#subtr-settings .subtr-acct-btn {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--subtr-border);
+  color: var(--subtr-text);
+  border-radius: var(--subtr-r-sm);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--subtr-dur), border-color var(--subtr-dur);
+}
+
+#subtr-settings .subtr-acct-btn:hover {
+  background: rgba(255, 255, 255, .12);
+}
+
+#subtr-settings .subtr-acct-btn:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+#subtr-settings label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--subtr-text-3);
+  margin: 12px 0 6px;
+}
+
+#subtr-settings input,
+#subtr-settings select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--subtr-border);
+  color: var(--subtr-text);
+  border-radius: var(--subtr-r-sm);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--subtr-dur), box-shadow var(--subtr-dur);
+}
+
+#subtr-settings input:focus,
+#subtr-settings select:focus {
+  border-color: var(--subtr-accent);
+  box-shadow: 0 0 0 3px var(--subtr-accent-ring);
+}
+
+/* ═══ Перемикач джерела ключа (свій / вбудований) ═══
+   Дзеркалить перемикач у popup — обидва пишуть у той самий ключ storage,
+   тож стан панелі й popup завжди узгоджений. Спеціфічність id + class
+   потрібна, щоб перебити загальне "#subtr-settings button" нижче. */
+#subtr-settings .subtr-seg {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--subtr-border);
+  border-radius: var(--subtr-r-sm);
+}
+
+#subtr-settings .subtr-seg-btn {
+  flex: 1;
+  width: auto;
+  margin: 0;
+  padding: 7px 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  box-shadow: none;
+  color: var(--subtr-text-3);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--subtr-dur), color var(--subtr-dur);
+}
+
+#subtr-settings .subtr-seg-btn:hover {
+  transform: none;
+  filter: none;
+  color: var(--subtr-text-2);
+}
+
+#subtr-settings .subtr-seg-btn.active {
+  background: var(--subtr-accent-grad);
+  color: #fff;
+}
+
+#subtr-settings .subtr-proxy-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--subtr-text-3);
+  line-height: 1.45;
+}
+
+#subtr-settings .subtr-proxy-hint.warn { color: var(--subtr-danger, #fb7185); }
+
+/* ═══ Кастомний дропдаун (shared/dropdown.ts) ═══
+   Нативний <select> малює список засобами ОС — стилізувати його неможливо,
+   тому власний віджет. Селектори мають перебивати загальне правило
+   "#subtr-settings button" нижче (воно робить кнопки на всю ширину з
+   градієнтом), тож усі правила тут зі спеціфічністю id + class. */
+#subtr-settings .subtr-dd { position: relative; }
+
+#subtr-settings .subtr-dd-trigger {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--subtr-border);
+  color: var(--subtr-text);
+  border-radius: var(--subtr-r-sm);
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 400;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--subtr-dur), box-shadow var(--subtr-dur);
+}
+
+#subtr-settings .subtr-dd-trigger:hover {
+  transform: none;
+  filter: none;
+  border-color: rgba(255, 255, 255, .22);
+}
+
+#subtr-settings .subtr-dd.is-open .subtr-dd-trigger,
+#subtr-settings .subtr-dd-trigger:focus-visible {
+  outline: none;
+  border-color: var(--subtr-accent);
+  box-shadow: 0 0 0 3px var(--subtr-accent-ring);
+}
+
+#subtr-settings .subtr-dd-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#subtr-settings .subtr-dd-chevron {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--subtr-text-3);
+  transition: transform var(--subtr-dur) var(--subtr-ease);
+}
+
+#subtr-settings .subtr-dd.is-open .subtr-dd-chevron { transform: rotate(180deg); }
+
+#subtr-settings .subtr-dd-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 5px;
+  background: #1b1c24;
+  border: 1px solid var(--subtr-border);
+  border-radius: var(--subtr-r-md, 12px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, .55);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+#subtr-settings .subtr-dd.is-open .subtr-dd-menu { display: block; }
+
+#subtr-settings .subtr-dd-opt {
+  width: 100%;
+  margin: 0;
+  display: block;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  box-shadow: none;
+  color: var(--subtr-text-2);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--subtr-dur), color var(--subtr-dur);
+}
+
+#subtr-settings .subtr-dd-opt:hover,
+#subtr-settings .subtr-dd-opt:focus-visible {
+  outline: none;
+  transform: none;
+  filter: none;
+  background: rgba(255, 255, 255, .07);
+  color: var(--subtr-text);
+}
+
+#subtr-settings .subtr-dd-opt.is-selected {
+  background: linear-gradient(135deg, rgba(99, 102, 241, .22), rgba(139, 92, 246, .22));
+  color: var(--subtr-text);
+}
+
+#subtr-settings .subtr-dd-opt-label { display: block; font-weight: 500; }
+
+#subtr-settings .subtr-dd-opt-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--subtr-text-3);
+  margin-top: 2px;
+}
+
+#subtr-settings button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  background: var(--subtr-accent-grad);
+  color: #fff;
+  border: none;
+  border-radius: var(--subtr-r-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  box-shadow: 0 6px 18px rgba(99, 102, 241, .4);
+  transition: transform var(--subtr-dur) var(--subtr-ease), filter var(--subtr-dur);
+}
+
+#subtr-settings button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+#subtr-settings #subtr-set-status {
+  margin-top: 8px;
+  font-size: 12px;
+  text-align: center;
+  min-height: 14px;
+}
+
+#subtr-settings .ok { color: var(--subtr-success); }
+#subtr-settings .err { color: var(--subtr-danger); }
+
+/* Видимий focus-ring для клавіатурної навігації */
+#subtr-subs .subtr-word:focus-visible,
+#subtr-tooltip .subtr-tt-btn:focus-visible,
+#subtr-load-btn:focus-visible,
+.subtr-yt-settings-btn:focus-visible,
+#subtr-settings input:focus-visible,
+#subtr-settings select:focus-visible,
+#subtr-settings button:focus-visible {
+  outline: 2px solid var(--subtr-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #subtr-tooltip,
+  #subtr-offset,
+  #subtr-toast,
+  #subtr-load-btn,
+  #subtr-subs .subtr-word,
+  #subtr-settings,
+  .subtr-yt-settings-btn {
+    transition: none !important;
+  }
+
+  #subtr-tooltip.visible {
+    transform: none;
+  }
+
+  #subtr-offset.visible {
+    transform: none;
+  }
+
+  #subtr-toast.visible {
+    transform: translateX(-50%);
+  }
+
+  #subtr-load-btn:hover,
+  #subtr-settings button:hover {
+    transform: none;
+  }
+
+  #subtr-settings.visible {
+    transform: none;
+  }
+}
+
+/* YouTube (D, CLAUDE_CODE_BRIEF_YOUTUBE.md §6.D): ховаємо рідні субтитри
+   YouTube, поки активний наш overlay, — щоб вони не дублювались. */
+html.subtr-yt-hide-native-captions .ytp-caption-window-container {
+  display: none !important;
+}

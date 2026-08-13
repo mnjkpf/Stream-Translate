@@ -11,11 +11,12 @@ const path = require('path');
 
 const DIST_TEST_DIR = path.join(__dirname, '..', 'dist', 'test');
 
-let subtitleParser, cacheKey, youtubeCaptions;
+let subtitleParser, cacheKey, youtubeCaptions, pronunciationMatch;
 try {
   subtitleParser = require(path.join(DIST_TEST_DIR, 'subtitleParser.js'));
   cacheKey = require(path.join(DIST_TEST_DIR, 'cacheKey.js'));
   youtubeCaptions = require(path.join(DIST_TEST_DIR, 'youtubeCaptions.js'));
+  pronunciationMatch = require(path.join(DIST_TEST_DIR, 'pronunciationMatch.js'));
 } catch (err) {
   console.error('Не вдалося завантажити зібрані модулі з dist/test/. Спочатку запусти: npm run build');
   console.error(err.message);
@@ -25,6 +26,7 @@ try {
 const { parseSRT, parseVTT, parseSubtitles, parseYouTubeJson3 } = subtitleParser;
 const { hashString, buildCacheKey } = cacheKey;
 const { LANGUAGE_CODE_MAP, buildCaptionCandidates, parseTimedtextBody, pollForMatchingTracks } = youtubeCaptions;
+const { comparePronunciation, normalizeWord, words } = pronunciationMatch;
 
 let passed = 0;
 let failed = 0;
@@ -122,6 +124,40 @@ test('strips HTML and ASS tags from cue text', () => {
   const srt = '1\n00:00:01,000 --> 00:00:02,000\n{\\an8}<i>Italic</i> text';
   const cues = parseSRT(srt);
   assert.strictEqual(cues[0].text, 'Italic text');
+});
+
+test('strips ">>" speaker-change markers at the start of a line', () => {
+  const srt = '1\n00:00:01,000 --> 00:00:02,000\n>> Oh my god, the apex.';
+  const cues = parseSRT(srt);
+  assert.strictEqual(cues[0].text, 'Oh my god, the apex.');
+});
+
+test('strips a mid-line ">>" marker without gluing the words together', () => {
+  const srt = '1\n00:00:01,000 --> 00:00:02,000\nNice. >> Oh my god, the apex.';
+  const cues = parseSRT(srt);
+  assert.strictEqual(cues[0].text, 'Nice. Oh my god, the apex.');
+});
+
+test('strips ">>>" (new topic) the same way as ">>"', () => {
+  const srt = '1\n00:00:01,000 --> 00:00:02,000\n>>> Back to the studio';
+  const cues = parseSRT(srt);
+  assert.strictEqual(cues[0].text, 'Back to the studio');
+});
+
+test('leaves a single ">" alone (not a speaker marker)', () => {
+  const srt = '1\n00:00:01,000 --> 00:00:02,000\n5 > 3 is true';
+  const cues = parseSRT(srt);
+  assert.strictEqual(cues[0].text, '5 > 3 is true');
+});
+
+test('strips ">>" from YouTube json3 cues too', () => {
+  const doc = {
+    events: [
+      { tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: '>> ' }, { utf8: 'Hello there' }] }
+    ]
+  };
+  const cues = parseYouTubeJson3(doc);
+  assert.strictEqual(cues[0].text, 'Hello there');
 });
 
 test('strips a leading BOM and normalizes CRLF', () => {
@@ -539,6 +575,68 @@ test('parses a valid JSON array string', () => {
 
     const tracksForUndefined = await pollForMatchingTracks(fetchOnce, undefined, { delayFn });
     assert.deepStrictEqual(tracksForUndefined, [{ id: 'x' }]);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // comparePronunciation (практика вимови)
+  // ═══════════════════════════════════════════════════════════
+  console.log('comparePronunciation');
+
+  test('perfect repeat scores 100', () => {
+    const r = comparePronunciation('Oh my god, the apex.', 'oh my god the apex');
+    assert.strictEqual(r.score, 100);
+    assert.deepStrictEqual(r.matched, [true, true, true, true, true]);
+  });
+
+  test('ignores punctuation and case on both sides', () => {
+    const r = comparePronunciation('Hello, world!', 'HELLO WORLD');
+    assert.strictEqual(r.score, 100);
+  });
+
+  test('a missed word is marked at its own position, not shifting the rest', () => {
+    // Розпізнавач загубив "quick" — решта слів усе одно має зарахуватись.
+    const r = comparePronunciation('the quick brown fox', 'the brown fox');
+    assert.deepStrictEqual(r.matched, [true, false, true, true]);
+    assert.strictEqual(r.score, 75);
+  });
+
+  test('an extra inserted word does not break matching of the tail', () => {
+    // Головна причина мультимножини замість позиційного зіставлення.
+    const r = comparePronunciation('the brown fox', 'the very brown fox');
+    assert.deepStrictEqual(r.matched, [true, true, true]);
+    assert.strictEqual(r.score, 100);
+  });
+
+  test('saying a repeated word once does not satisfy both occurrences', () => {
+    const r = comparePronunciation('the cat and the dog', 'the cat and dog');
+    assert.deepStrictEqual(r.matched, [true, true, true, false, true]);
+  });
+
+  test('completely wrong answer scores 0', () => {
+    const r = comparePronunciation('good morning', 'zzz qqq');
+    assert.strictEqual(r.score, 0);
+    assert.deepStrictEqual(r.matched, [false, false]);
+  });
+
+  test('empty expected text scores 0 instead of dividing by zero', () => {
+    const r = comparePronunciation('', 'anything');
+    assert.strictEqual(r.score, 0);
+    assert.deepStrictEqual(r.expected, []);
+  });
+
+  test('empty heard text marks everything missed', () => {
+    const r = comparePronunciation('two words', '');
+    assert.strictEqual(r.score, 0);
+    assert.deepStrictEqual(r.matched, [false, false]);
+  });
+
+  test('keeps apostrophes inside words (don\'t stays one token)', () => {
+    assert.strictEqual(normalizeWord("Don't!"), "don't");
+    assert.deepStrictEqual(words("I don't know"), ['i', "don't", 'know']);
+  });
+
+  test('collapses multiple spaces and newlines into clean tokens', () => {
+    assert.deepStrictEqual(words('a  b\nc'), ['a', 'b', 'c']);
   });
 
   // ═══════════════════════════════════════════════════════════

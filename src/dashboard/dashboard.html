@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Statistics — Subtitle Translator</title>
+  <style>
+    :root {
+      --tr-accent-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+      --tr-accent: #818cf8;
+      --tr-accent-2: #8b5cf6;
+      --tr-accent-ring: rgba(129, 140, 248, .40);
+      --tr-success: #34d399;
+      --tr-danger: #fb7185;
+      --tr-text: #f4f4f5;
+      --tr-text-2: #b7b8c4;
+      --tr-text-3: #83848f;
+      --tr-border: rgba(255, 255, 255, .10);
+      --tr-panel: rgba(255, 255, 255, .03);
+      --tr-dur: 150ms;
+      --tr-ease: cubic-bezier(.2, .7, .2, 1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 24px 64px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+      background: linear-gradient(170deg, #17181f, #0e0f15 60%);
+      color: var(--tr-text);
+      min-height: 100vh;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; }
+
+    header { display: flex; align-items: center; gap: 13px; margin-bottom: 28px; }
+    .logo {
+      width: 40px; height: 40px; border-radius: 11px;
+      background: var(--tr-accent-grad);
+      display: grid; place-items: center; color: #fff;
+      box-shadow: 0 6px 18px rgba(99, 102, 241, .4);
+    }
+    h1 { font-size: 19px; margin: 0; font-weight: 600; }
+    .sub { font-size: 12px; color: var(--tr-text-3); margin-top: 2px; }
+
+    .card {
+      background: var(--tr-panel);
+      border: 1px solid var(--tr-border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap; margin-bottom: 18px;
+    }
+    .card-title { font-size: 15px; font-weight: 600; }
+
+    /* Фільтри */
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+    .seg { display: flex; gap: 4px; padding: 4px; background: rgba(255,255,255,.04);
+           border: 1px solid var(--tr-border); border-radius: 10px; }
+    .seg-btn {
+      padding: 6px 12px; background: transparent; border: none; border-radius: 7px;
+      color: var(--tr-text-3); font-size: 12px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: background var(--tr-dur), color var(--tr-dur);
+    }
+    .seg-btn:hover { color: var(--tr-text-2); }
+    .seg-btn.active { background: var(--tr-accent-grad); color: #fff; }
+
+    /* Підсумкові показники */
+    .totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .total { padding: 15px; background: rgba(255,255,255,.04);
+             border: 1px solid var(--tr-border); border-radius: 12px; }
+    .total-value {
+      font-size: 24px; font-weight: 700; line-height: 1.15;
+      background: var(--tr-accent-grad);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .total-label { font-size: 11px; color: var(--tr-text-3); margin-top: 4px; }
+
+    /* Графік */
+    #chart { width: 100%; height: 260px; display: block; }
+    .legend { display: flex; gap: 18px; margin-top: 12px; font-size: 12px; color: var(--tr-text-2); }
+    .legend-item { display: flex; align-items: center; gap: 7px; }
+    .dot { width: 10px; height: 10px; border-radius: 3px; }
+
+    /* Історія */
+    .search {
+      width: 100%; padding: 10px 13px; background: rgba(255,255,255,.04);
+      border: 1px solid var(--tr-border); color: var(--tr-text);
+      border-radius: 10px; font-size: 13px; font-family: inherit; outline: none;
+      transition: border-color var(--tr-dur), box-shadow var(--tr-dur);
+    }
+    .search:focus { border-color: var(--tr-accent); box-shadow: 0 0 0 3px var(--tr-accent-ring); }
+
+    .hist-row {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 12px 0; border-bottom: 1px solid var(--tr-border);
+    }
+    .hist-main { flex: 1; min-width: 0; }
+    .hist-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .hist-text { font-size: 14px; font-weight: 600; }
+    .hist-badge {
+      font-size: 10px; color: var(--tr-text-3); padding: 1px 7px;
+      border: 1px solid var(--tr-border); border-radius: 999px;
+    }
+    .hist-tr { font-size: 13px; color: var(--tr-text-2); margin-top: 3px; }
+    .hist-meta { flex: none; text-align: right; font-size: 11px; color: var(--tr-text-3); }
+    .hist-meta a { color: var(--tr-accent); text-decoration: none; }
+    .hist-meta a:hover { text-decoration: underline; }
+
+    .pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px; }
+    .pager button {
+      padding: 8px 16px; background: rgba(255,255,255,.05); border: 1px solid var(--tr-border);
+      color: var(--tr-text-2); border-radius: 9px; font-size: 12px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+    }
+    .pager button:disabled { opacity: .4; cursor: default; }
+    .pager span { font-size: 12px; color: var(--tr-text-3); }
+
+    .empty { text-align: center; color: var(--tr-text-3); font-size: 13px; padding: 36px 0; line-height: 1.6; }
+    .note { font-size: 11px; color: var(--tr-text-3); margin-top: 14px; }
+
+    /* ── Повторення (SRS) ─────────────────────────────────────────────── */
+    .review-card { text-align: center; padding: 26px 20px 10px; }
+    .review-word { font-size: 30px; font-weight: 700; letter-spacing: -.4px; }
+    .review-pos { font-size: 12px; color: var(--tr-text-3); margin-top: 6px; }
+    .review-context {
+      font-size: 14px; color: var(--tr-text-2); line-height: 1.6;
+      margin: 20px auto 0; max-width: 560px;
+    }
+    /* Слово, яке повторюємо, підсвічене прямо в реченні з відео — саме
+       контекст робить картку кращою за звичайну двосторонню картку. */
+    .review-context b { color: var(--tr-text); background: rgba(129,140,248,.18);
+                        padding: 1px 5px; border-radius: 5px; font-weight: 600; }
+    .review-answer {
+      margin: 22px auto 0; max-width: 560px; padding-top: 20px;
+      border-top: 1px solid var(--tr-border);
+    }
+    .review-translation { font-size: 20px; font-weight: 600; color: var(--tr-success); }
+    .review-example { font-size: 13px; color: var(--tr-text-3); margin-top: 10px; font-style: italic; }
+    .review-source { display: inline-block; margin-top: 14px; font-size: 12px;
+                     color: var(--tr-accent); text-decoration: none; }
+    .review-source:hover { text-decoration: underline; }
+
+    .btn-primary {
+      padding: 11px 30px; background: var(--tr-accent-grad); border: none;
+      border-radius: 10px; color: #fff; font-size: 14px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+    }
+    .grades { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+    .grade {
+      flex: 1; min-width: 96px; max-width: 150px; padding: 11px 10px;
+      background: rgba(255,255,255,.05); border: 1px solid var(--tr-border);
+      border-radius: 10px; color: var(--tr-text-2); font-family: inherit;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background var(--tr-dur), color var(--tr-dur), border-color var(--tr-dur);
+    }
+    .grade:hover { background: rgba(255,255,255,.09); color: var(--tr-text); }
+    .grade small { display: block; font-size: 10px; font-weight: 500;
+                   color: var(--tr-text-3); margin-top: 3px; }
+    .grade-again:hover { border-color: rgba(251,113,133,.6); }
+    .grade-easy:hover  { border-color: rgba(52,211,153,.6); }
+    .review-progress { font-size: 12px; color: var(--tr-text-3); }
+
+    /* ── Часті пошуки ─────────────────────────────────────────────────── */
+    .freq-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 11px 0; border-bottom: 1px solid var(--tr-border);
+    }
+    .freq-main { flex: 1; min-width: 0; }
+    .freq-word { font-size: 14px; font-weight: 600; }
+    .freq-tr { font-size: 13px; color: var(--tr-text-2); margin-top: 2px; }
+    .freq-count {
+      flex: none; font-size: 11px; font-weight: 600; color: var(--tr-accent);
+      background: rgba(129,140,248,.14); padding: 3px 9px; border-radius: 999px;
+    }
+    .freq-save {
+      flex: none; padding: 7px 14px; background: rgba(255,255,255,.05);
+      border: 1px solid var(--tr-border); border-radius: 9px; color: var(--tr-text-2);
+      font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer;
+    }
+    .freq-save:hover:not(:disabled) { background: rgba(255,255,255,.09); color: var(--tr-text); }
+    .freq-save:disabled { opacity: .5; cursor: default; }
+
+    @media (max-width: 640px) { .totals { grid-template-columns: repeat(2, 1fr); } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+      </div>
+      <div>
+        <h1>Статистика та історія</h1>
+        <div class="sub" id="headerSub">Subtitle Translator</div>
+      </div>
+    </header>
+
+    <div id="loggedOut" class="card empty" hidden>
+      Увійдіть у розширенні, щоб побачити свою статистику та історію перекладів.
+    </div>
+
+    <div id="content" hidden>
+      <div class="totals">
+        <div class="total"><div class="total-value" id="totalTranslations">0</div><div class="total-label">Перекладів за період</div></div>
+        <div class="total"><div class="total-value" id="totalWords">0</div><div class="total-label">Збережено слів</div></div>
+        <div class="total"><div class="total-value" id="activeDays">0</div><div class="total-label">Активних днів</div></div>
+        <div class="total"><div class="total-value" id="bestStreak">0</div><div class="total-label">Найдовша серія</div></div>
+      </div>
+
+      <!-- Повторення — найперше на сторінці: це єдиний блок, який вимагає
+           дії просто зараз, решта лише показує, що вже сталось. -->
+      <div class="card" id="reviewCard">
+        <div class="card-head">
+          <div class="card-title">Повторення</div>
+          <div class="review-progress" id="reviewProgress"></div>
+        </div>
+        <div id="reviewBody"></div>
+      </div>
+
+      <!-- Часті пошуки: показуємо, лише коли є що показати (див. index.js) -->
+      <div class="card" id="frequentCard" hidden>
+        <div class="card-head">
+          <div class="card-title">Ти постійно це шукаєш</div>
+        </div>
+        <div id="frequentList"></div>
+        <div class="note">Слова, які ти перекладав кілька разів, але не зберіг.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Активність</div>
+          <div class="filters">
+            <div class="seg" id="periodFilter">
+              <button type="button" class="seg-btn" data-days="7">7 днів</button>
+              <button type="button" class="seg-btn active" data-days="30">30 днів</button>
+              <button type="button" class="seg-btn" data-days="90">90 днів</button>
+            </div>
+            <div class="seg" id="seriesFilter">
+              <button type="button" class="seg-btn active" data-series="both">Усе</button>
+              <button type="button" class="seg-btn" data-series="translations">Переклади</button>
+              <button type="button" class="seg-btn" data-series="words">Слова</button>
+            </div>
+          </div>
+        </div>
+        <svg id="chart" role="img" aria-label="Графік активності за обраний період"></svg>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Історія перекладів</div>
+          <div style="flex:1; min-width:220px; max-width:340px">
+            <input type="text" id="historySearch" class="search" placeholder="Пошук за словом або перекладом…">
+          </div>
+        </div>
+        <div id="historyList"></div>
+        <div class="pager" id="pager" hidden>
+          <button type="button" id="prevPage">← Новіші</button>
+          <span id="pageInfo"></span>
+          <button type="button" id="nextPage">Старіші →</button>
+        </div>
+        <div class="note">Історія зберігається 90 днів, після чого видаляється автоматично.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
