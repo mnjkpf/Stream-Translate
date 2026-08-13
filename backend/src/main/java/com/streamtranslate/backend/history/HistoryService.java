@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.streamtranslate.backend.history.dto.FrequentLookupResponse;
 import com.streamtranslate.backend.history.dto.HistoryRequest;
 import com.streamtranslate.backend.history.dto.HistoryResponse;
 import com.streamtranslate.backend.history.dto.StatsPoint;
@@ -50,7 +51,10 @@ public class HistoryService {
         entry.setSourceLang(request.sourceLang());
         entry.setTargetLang(request.targetLang());
         entry.setSourceUrl(request.sourceUrl());
-        return HistoryResponse.from(historyRepository.save(entry));
+        // saveAndFlush: @CreationTimestamp проставляється під час flush, а той без
+        // цього стався б аж на коміті — тобто після складання DTO, і createdAt
+        // у відповіді був би null.
+        return HistoryResponse.from(historyRepository.saveAndFlush(entry));
     }
 
     @Transactional(readOnly = true)
@@ -93,6 +97,23 @@ public class HistoryService {
             map.put(LocalDate.parse(row.getDay()), row.getTotal());
         }
         return map;
+    }
+
+    // Часто шукані, ще не збережені слова — сигнал "варто вчити" для дашборда.
+    // since рахуємо так само, як у stats(): вікно з сьогодні назад по UTC.
+    @Transactional(readOnly = true)
+    public List<FrequentLookupResponse> frequentLookups(UUID userId, int days, long min, int limit) {
+        int window = Math.min(Math.max(1, days), MAX_DAYS);
+        long threshold = Math.max(1, min);
+        int size = Math.min(Math.max(1, limit), 100);
+
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate from = today.minusDays(window - 1L);
+        Instant since = from.atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        return historyRepository.findFrequentLookups(userId, since, threshold, size).stream()
+                .map(FrequentLookupResponse::from)
+                .toList();
     }
 
     // Використовується завданням очищення (HistoryRetentionJob).

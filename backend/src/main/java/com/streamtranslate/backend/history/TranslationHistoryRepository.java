@@ -52,11 +52,77 @@ public interface TranslationHistoryRepository extends JpaRepository<TranslationH
     @Query("DELETE FROM TranslationHistory h WHERE h.createdAt < :cutoff")
     int deleteOlderThan(@Param("cutoff") Instant cutoff);
 
+    // Часто шукані, ще не збережені слова — сигнал "варто вчити" для дашборда.
+    //
+    // Віконні функції в підзапиті замість GROUP BY: потрібні одночасно частота слова
+    // (COUNT(*) OVER) і повний рядок найновішого перекладу (translation, source_url,
+    // мови), а GROUP BY віддав би лише перше — translation довелось би або агрегувати
+    // (MAX() бере алфавітно найбільший рядок, не найновіший), або приєднувати окремим
+    // проходом. ROW_NUMBER() OVER (... ORDER BY created_at DESC) нумерує рядки кожної
+    // групи від найсвіжішого, і зовнішній запит лишає лише rn = 1 — по одному, вже
+    // повному рядку на групу за один прохід по таблиці. CTE із самоприєднанням дало б
+    // той самий результат двома сканами.
+    //
+    // LOWER(text) скрізь для партиціонування й LOWER(sw.lemma) = LOWER(latest.text) для
+    // NOT EXISTS: в історії слово лежить так, як стояло в субтитрах (може з великої),
+    // а лема — у базовій формі малими. Без зведення регістру вже збережене слово
+    // продовжувало б з'являтись у списку.
+    //
+    // created_at віддаємо як є (TIMESTAMPTZ -> Instant): на відміну від DATE ->
+    // java.sql.Date у countByDay, тут немає CAST(...AS DATE), тож проблема з календарем
+    // JVM цей шлях не зачіпає.
+    @Query(value = """
+            SELECT text, translation, source_lang, target_lang, source_url,
+                   count, created_at AS last_seen_at
+            FROM (
+                SELECT
+                    text,
+                    translation,
+                    source_lang,
+                    target_lang,
+                    source_url,
+                    created_at,
+                    COUNT(*) OVER (PARTITION BY LOWER(text)) AS count,
+                    ROW_NUMBER() OVER (PARTITION BY LOWER(text) ORDER BY created_at DESC) AS rn
+                FROM translation_history
+                WHERE user_id = :userId AND created_at >= :since
+            ) latest
+            WHERE rn = 1
+              AND count >= :min
+              AND NOT EXISTS (
+                    SELECT 1 FROM saved_words sw
+                    WHERE sw.user_id = :userId AND LOWER(sw.lemma) = LOWER(latest.text)
+              )
+            ORDER BY count DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<FrequentLookup> findFrequentLookups(@Param("userId") UUID userId, @Param("since") Instant since,
+            @Param("min") long min, @Param("limit") int limit);
+
     // Проєкція для нативного запиту вище. День — String ('YYYY-MM-DD'), не java.sql.Date
     // (див. коментар над countByDay).
     interface DailyCount {
         String getDay();
 
         long getTotal();
+    }
+
+    // Проєкція для findFrequentLookups. Псевдоніми стовпців мають точно відповідати
+    // іменам геттерів (last_seen_at -> getLastSeenAt) — Spring Data зіставляє їх за
+    // іменем, розбіжність падає в рантаймі при першому виклику, не на компіляції.
+    interface FrequentLookup {
+        String getText();
+
+        long getCount();
+
+        String getTranslation();
+
+        String getSourceLang();
+
+        String getTargetLang();
+
+        String getSourceUrl();
+
+        Instant getLastSeenAt();
     }
 }

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.streamtranslate.backend.auth.CurrentUser;
+import com.streamtranslate.backend.history.dto.FrequentLookupResponse;
 import com.streamtranslate.backend.history.dto.HistoryRequest;
 import com.streamtranslate.backend.history.dto.HistoryResponse;
 import com.streamtranslate.backend.history.dto.StatsPoint;
@@ -57,5 +58,13 @@ public class HistoryController {
     public List<StatsPoint> stats(@AuthenticationPrincipal Jwt jwt,
             @RequestParam(defaultValue = "30") int days) {
         return historyService.stats(CurrentUser.id(jwt), days);
+    }
+
+    @GetMapping("/history/frequent")
+    public List<FrequentLookupResponse> frequent(@AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "30") int days,
+            @RequestParam(defaultValue = "3") long min,
+            @RequestParam(defaultValue = "20") int limit) {
+        return historyService.frequentLookups(CurrentUser.id(jwt), days, min, limit);
     }
 }
