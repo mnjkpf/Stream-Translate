@@ -22,6 +22,12 @@ import org.springframework.http.HttpStatus;
 // user_id завжди з JWT (переданий сюди вже як currentUserId), ніколи з тіла запиту — findByIdAndUser_Id
 // в update/delete/get є головним захистом від IDOR (чуже слово завжди виглядає як 404, а не 403,
 // щоб не підтверджувати існування чужих id).
+//
+// saveAndFlush, а не save, там де відповідь будується одразу з результату: @CreationTimestamp
+// і @UpdateTimestamp проставляються Hibernate під час flush, а той за замовчуванням стається аж
+// на коміті транзакції — тобто ПІСЛЯ того, як WordResponse.from() уже зібрав DTO. Через це POST
+// віддавав createdAt/updatedAt = null, а PUT — стару мітку. У sync flush не потрібен: запит
+// findByUserIdAndUpdatedAtAfter нижче й так змушує Hibernate злити зміни перед виконанням.
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -50,13 +56,13 @@ public class WordService {
                     return fresh;
                 });
         applyRequest(word, request);
-        return WordResponse.from(savedWordsRepository.save(word));
+        return WordResponse.from(savedWordsRepository.saveAndFlush(word));
     }
 
     public WordResponse update(UUID currentUserId, UUID wordId, WordRequest request) {
         SavedWords word = findOwned(currentUserId, wordId);
         applyRequest(word, request);
-        return WordResponse.from(savedWordsRepository.save(word));
+        return WordResponse.from(savedWordsRepository.saveAndFlush(word));
     }
 
     public void delete(UUID currentUserId, UUID wordId) {

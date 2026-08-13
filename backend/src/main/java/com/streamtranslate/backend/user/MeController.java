@@ -51,6 +51,9 @@ public class MeController {
         putIfPresent(settings, "sourceLang", request.sourceLang());
         putIfPresent(settings, "targetLang", request.targetLang());
         putIfPresent(settings, "model", request.model());
+        // 'own' | 'proxy' — без цього рядка вибір «вбудований ключ» не переживав
+        // би перехід на інший пристрій: розширення читає keySource назад при логіні.
+        putIfPresent(settings, "keySource", request.keySource());
         user.setSettings(settings);
 
         return MeResponse.from(userRepository.save(user));
