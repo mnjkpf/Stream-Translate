@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SavedWordsRepository extends JpaRepository<SavedWords, UUID> {
@@ -34,4 +35,12 @@ public interface SavedWordsRepository extends JpaRepository<SavedWords, UUID> {
     // рядок замість падіння на constraint.
     Optional<SavedWords> findByUser_IdAndLemmaAndSourceLangAndTargetLang(
             UUID userId, String lemma, String sourceLang, String targetLang);
+
+
+    // Черга повторення: слова, готові зараз (dueAt <= now), найстаріші перші.
+    List<SavedWords> findByUser_IdAndDueAtLessThanEqualOrderByDueAtAsc(UUID userId, Instant dueAt, Pageable pageable);
+
+    int countByUser_IdAndDueAtLessThanEqual(UUID userId, Instant dueAt);
+    int countByUser_Id(UUID userId);
+    int countByUser_IdAndSrsLevelGreaterThanEqual(UUID userId, int srsLevel);
 }

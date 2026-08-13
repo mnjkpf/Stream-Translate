@@ -68,4 +68,26 @@ public class SavedWords {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    // ── Стан інтервальних повторень (V7) ────────────────────────────────────
+    // Без columnDefinition: схемою керує Flyway, а Hibernate лише звіряє її
+    // (ddl-auto=validate) і ці атрибути не використовує взагалі. Тримати тут
+    // ще один опис колонки означало б дві версії правди, які мовчки розійдуться.
+    @Column(name = "srs_level", nullable = false)
+    private int srsLevel;
+
+    // Ініціалізація саме тут, а не в WordService: Hibernate у INSERT перелічує
+    // всі колонки, тож null у полі пішов би в БД явним NULL і DEFAULT NOW()
+    // з міграції не спрацював би — вставка падала б на NOT NULL. Значення в полі
+    // закриває одразу обидва шляхи створення слова (create і гілку нового слова
+    // в sync), тож жоден із них не можна забути.
+    @Column(name = "due_at", nullable = false)
+    private Instant dueAt = Instant.now();
+
+    @Column(name = "lapses", nullable = false)
+    private int lapses;
+
+    // nullable: NULL тут означає «жодного разу не повторювалось».
+    @Column(name = "reviewed_at")
+    private Instant reviewedAt;
 }

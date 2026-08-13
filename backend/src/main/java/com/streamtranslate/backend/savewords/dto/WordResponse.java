@@ -17,7 +17,9 @@ public record WordResponse(
         String context,
         String sourceUrl,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        int srsLevel,
+        Instant dueAt
 ) {
     public static WordResponse from(SavedWords word) {
         return new WordResponse(
@@ -32,6 +34,8 @@ public record WordResponse(
                 word.getContext(),
                 word.getSourceUrl(),
                 word.getCreatedAt(),
-                word.getUpdatedAt());
+                word.getUpdatedAt(),
+                word.getSrsLevel(),
+                word.getDueAt());
     }
 }
