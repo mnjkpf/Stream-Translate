@@ -12,7 +12,7 @@
 
   "host_permissions": [
     "https://generativelanguage.googleapis.com/*",
-    "http://localhost:8080/*"
+    "__BACKEND_ORIGIN__/*"
   ],
 
   "content_scripts": [
