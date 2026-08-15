@@ -9,9 +9,18 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+
+import com.streamtranslate.backend.auth.JwtService;
+import com.streamtranslate.backend.auth.TokenType;
 
 import io.jsonwebtoken.io.Decoders;
 
@@ -54,9 +63,29 @@ public class SecurityConfig {
 
     // Валідує НАШІ токени (JwtService): той самий base64 HMAC-секрет з app.jwt.secret, той самий
     // алгоритм підпису. Google ID-токени цим декодером ніколи не перевіряються.
+    //
+    // Додатково до підпису й строку дії вимагаємо claim type=access. Це друга половина
+    // фікса з TokenType: без неї refresh-токен приймався б як access у звичайних запитах
+    // до API — а він живе 30 днів проти 15 хвилин, тож його крадіжка коштувала б значно
+    // дорожче. Перевірка саме тут, у декодері, а не в кожному контролері: так її
+    // неможливо забути для нового ендпоінта.
     @Bean
     public JwtDecoder jwtDecoder(@Value("${app.jwt.secret}") String jwtSecretBase64) {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecretBase64);
-        return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(keyBytes, "HmacSHA256")).build();
+        NimbusJwtDecoder decoder = NimbusJwtDecoder
+                .withSecretKey(new SecretKeySpec(keyBytes, "HmacSHA256"))
+                .build();
+
+        OAuth2TokenValidator<Jwt> accessOnly = jwt -> {
+            String type = jwt.getClaimAsString(JwtService.TYPE_CLAIM);
+            return TokenType.ACCESS.claimValue().equals(type)
+                    ? OAuth2TokenValidatorResult.success()
+                    : OAuth2TokenValidatorResult.failure(new OAuth2Error(
+                            "invalid_token", "Очікується access-токен", null));
+        };
+
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefault(), accessOnly));
+        return decoder;
     }
 }

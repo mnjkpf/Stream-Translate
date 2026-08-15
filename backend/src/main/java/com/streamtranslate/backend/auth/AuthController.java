@@ -2,6 +2,8 @@ package com.streamtranslate.backend.auth;
 
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,11 +47,17 @@ public class AuthController {
 
     // Обмін ще дійсного refresh-токена на новий access. Сам refresh не оновлюємо — клієнт
     // продовжує користуватись тим самим, поки він не протермінується.
+    //
+    // TokenType.REFRESH обов'язковий: раніше сюди приймався будь-який наш токен, тож
+    // вкрадений access можна було продовжувати нескінченно, обмінюючи на новий, і
+    // 15-хвилинний TTL нічого не захищав.
     @PostMapping("/refresh")
     public TokenResponse refresh(@Valid @RequestBody RefreshRequest request) {
-        UUID userId = jwtService.parseUserId(request.refreshToken());
+        UUID userId = jwtService.parseUserId(request.refreshToken(), TokenType.REFRESH);
+        // 401, а не 500: підпис валідний, але користувача вже немає (акаунт видалено) —
+        // це стан клієнта, а не збій сервера, і клієнт має відреагувати повторним логіном.
         Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalStateException("Користувача з refresh-токена не знайдено: " + userId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Користувача не знайдено"));
 
         return new TokenResponse(jwtService.issueAccess(user), request.refreshToken());
     }
