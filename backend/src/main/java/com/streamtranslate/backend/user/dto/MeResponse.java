@@ -2,6 +2,7 @@ package com.streamtranslate.backend.user.dto;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 import com.streamtranslate.backend.user.Users;
 
@@ -12,11 +13,17 @@ public record MeResponse(
         Instant createdAt,
         Map<String, String> settings
 ) {
-    public static MeResponse from(Users user) {
+    // settings проходять через перетворювач (MeController.decryptSettings), бо
+    // в базі apiKey лежить зашифрованим, а клієнту потрібен відкритий.
+    //
+    // Розшифрування передається сюди функцією, а не викликається всередині: DTO не
+    // має знати ні про SettingsCrypto, ні про те, які саме поля секретні. Інакше
+    // record перестав би бути простим перетворенням сутності у відповідь.
+    public static MeResponse from(Users user, UnaryOperator<Map<String, String>> settingsMapper) {
         return new MeResponse(
                 user.getEmail(),
                 user.getDisplayName(),
                 user.getCreatedAt(),
-                user.getSettings());
+                settingsMapper.apply(user.getSettings()));
     }
 }

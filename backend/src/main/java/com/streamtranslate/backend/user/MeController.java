@@ -19,22 +19,31 @@ import com.streamtranslate.backend.user.dto.MeResponse;
 import com.streamtranslate.backend.user.dto.SettingsUpdateRequest;
 
 // Профіль + налаштування поточного користувача. user_id завжди з JWT (CurrentUser.id).
-// УВАГА: settings можуть містити apiKey (ключ Gemini користувача) — зберігаємо його
-// в JSONB як є. TODO(безпека): шифрувати at-rest, якщо/коли з'явиться кілька користувачів.
+//
+// settings містять apiKey — ключ Gemini користувача. У базу він іде ЗАШИФРОВАНИМ
+// (SettingsCrypto), а назовні віддається розшифрованим: розширення підставляє його
+// у виклики Gemini напряму з браузера, тож іншого корисного вигляду для клієнта немає.
+// Шифрування захищає дамп бази, а не канал — канал закриває HTTPS.
 @RestController
 @RequestMapping("/me")
 public class MeController {
 
-    private final UserRepository userRepository;
+    // Єдине поле налаштувань, яке шифрується. Мови й модель не є секретом, а зайве
+    // шифрування ускладнило б і читання логів, і майбутні міграції даних.
+    private static final String SECRET_SETTING = "apiKey";
 
-    public MeController(UserRepository userRepository) {
+    private final UserRepository userRepository;
+    private final SettingsCrypto settingsCrypto;
+
+    public MeController(UserRepository userRepository, SettingsCrypto settingsCrypto) {
         this.userRepository = userRepository;
+        this.settingsCrypto = settingsCrypto;
     }
 
     @GetMapping
     @Transactional(readOnly = true)
     public MeResponse me(@AuthenticationPrincipal Jwt jwt) {
-        return MeResponse.from(currentUser(jwt));
+        return MeResponse.from(currentUser(jwt), this::decryptSettings);
     }
 
     @PutMapping("/settings")
@@ -47,7 +56,8 @@ public class MeController {
         // затирало решти). Реассайн, а не мутація на місці — так Hibernate гарантовано
         // помічає зміну JSONB-поля незалежно від mutability-плану JSON-типу.
         Map<String, String> settings = new HashMap<>(user.getSettings());
-        putIfPresent(settings, "apiKey", request.apiKey());
+        // Шифруємо одразу при записі: далі це значення живе в мапі, яка піде в JSONB.
+        putIfPresent(settings, SECRET_SETTING, settingsCrypto.encrypt(request.apiKey()));
         putIfPresent(settings, "sourceLang", request.sourceLang());
         putIfPresent(settings, "targetLang", request.targetLang());
         putIfPresent(settings, "model", request.model());
@@ -56,7 +66,29 @@ public class MeController {
         putIfPresent(settings, "keySource", request.keySource());
         user.setSettings(settings);
 
-        return MeResponse.from(userRepository.save(user));
+        return MeResponse.from(userRepository.save(user), this::decryptSettings);
+    }
+
+    // Розшифровує лише секретне поле, решту лишає як є. Значення без префікса
+    // enc:v1: — це записи з часів до шифрування, вони читаються далі без міграції.
+    private Map<String, String> decryptSettings(Map<String, String> stored) {
+        if (stored == null || stored.isEmpty()) {
+            return stored;
+        }
+        Map<String, String> result = new HashMap<>(stored);
+        String secret = result.get(SECRET_SETTING);
+        if (secret != null) {
+            String plain = settingsCrypto.decrypt(secret);
+            // null означає, що розшифрувати не вдалося (загублений/змінений ключ).
+            // Прибираємо поле замість того, щоб віддавати сміття: розширення покаже
+            // порожнє поле ключа, і користувач введе його заново.
+            if (plain == null) {
+                result.remove(SECRET_SETTING);
+            } else {
+                result.put(SECRET_SETTING, plain);
+            }
+        }
+        return result;
     }
 
     private static void putIfPresent(Map<String, String> settings, String key, String value) {
