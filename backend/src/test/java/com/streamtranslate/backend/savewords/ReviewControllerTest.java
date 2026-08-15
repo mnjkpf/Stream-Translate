@@ -12,7 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.streamtranslate.backend.TestcontainersConfiguration;
 import com.streamtranslate.backend.auth.JwtService;
 import com.streamtranslate.backend.savewords.dto.WordRequest;
@@ -31,7 +31,7 @@ class ReviewControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper objectMapper;
 
     @Autowired
     private UserRepository userRepository;

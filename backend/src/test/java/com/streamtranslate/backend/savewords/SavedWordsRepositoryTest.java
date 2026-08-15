@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,17 +51,26 @@ class SavedWordsRepositoryTest {
         assertThat(ownerWords.get(0).getLemma()).isEqualTo("cat");
     }
 
+    // Раніше цей тест виставляв updatedAt вручну (setUpdatedAt) і брав cutoff на секунду
+    // в майбутнє. Так він працювати не міг: @UpdateTimestamp — згенероване значення, і
+    // Hibernate перезаписує ним будь-яке виставлене вручну під час flush. Тому свіже слово
+    // отримувало updatedAt = «зараз», що МЕНШЕ за cutoff, і вибірка виходила порожньою.
+    // Пройти він міг хіба випадково — якби між двома flush минуло понад секунду.
+    //
+    // Тепер cutoff береться з реального updatedAt старого слова, а різницю в часі
+    // забезпечує коротка пауза. Запит використовує строге ">", тож саме старе слово
+    // у результат не потрапляє.
     @Test
-    void findByUserIdAndUpdatedAtAfterReturnsOnlyRecentChanges() {
+    void findByUserIdAndUpdatedAtAfterReturnsOnlyRecentChanges() throws InterruptedException {
         Users owner = persistUser("owner-sub-2");
         SavedWords old = persistWord(owner, "old", "old", "en", "uk");
         entityManager.flush();
 
-        Instant cutoff = old.getUpdatedAt().plus(1, ChronoUnit.SECONDS);
+        Instant cutoff = old.getUpdatedAt();
 
-        SavedWords fresh = persistWord(owner, "fresh", "fresh", "en", "uk");
-        fresh.setUpdatedAt(cutoff.plus(1, ChronoUnit.SECONDS));
-        savedWordsRepository.saveAndFlush(fresh);
+        Thread.sleep(50); // щоб updatedAt свіжого слова гарантовано був більшим
+        persistWord(owner, "fresh", "fresh", "en", "uk");
+        entityManager.flush();
 
         List<SavedWords> changed = savedWordsRepository.findByUserIdAndUpdatedAtAfter(owner.getId(), cutoff);
 

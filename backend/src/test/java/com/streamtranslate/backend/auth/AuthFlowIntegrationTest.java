@@ -14,7 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.streamtranslate.backend.TestcontainersConfiguration;
 import com.streamtranslate.backend.auth.dto.GoogleLoginRequest;
 import com.streamtranslate.backend.auth.dto.TokenResponse;
@@ -33,7 +33,7 @@ class AuthFlowIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper objectMapper;
 
     @MockitoBean
     private GoogleTokenVerifier googleTokenVerifier;
