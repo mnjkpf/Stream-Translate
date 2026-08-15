@@ -5,6 +5,7 @@
   "description": "Інтерактивні субтитри з AI-перекладом для стрімінгових сервісів",
   "scripts": {
     "build": "node build.mjs",
+    "build:prod": "node build.mjs --prod",
     "pretest": "npm run build",
     "test": "node tests/run.js",
     "typecheck": "tsc --noEmit"

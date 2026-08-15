@@ -4,6 +4,11 @@ dist/
 *_BRIEF*.md
 *_REPORT*.md
 config.local.*
+# Файли зі змінними середовища для локального запуску контейнера — містять
+# пароль до БД і JWT-секрет. Ніколи не комітяться.
+.env
+.env.*
+!.env.example
 .DS_Store
 BACKEND_ARCHITECTURE.md
 docs/ARCHITECTURE.md

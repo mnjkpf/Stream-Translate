@@ -9,9 +9,13 @@
 
 import { STORAGE } from '../shared/messages';
 
-// TODO(config): підстав свій Web OAuth Client ID з Google Cloud Console,
-// а для прод — реальний домен бекенду замість localhost.
-const BACKEND_BASE = 'http://localhost:8080';
+// Адреса бекенду підставляється на збірці (build.mjs, esbuild define) — у dev
+// це localhost, у прод-збірці реальний https-домен. Тип оголошено в
+// src/shared/buildEnv.d.ts, там же пояснено, чому не зі storage.
+const BACKEND_BASE = __BACKEND_BASE__;
+
+// Client ID не є секретом — він видно в кожному redirect-запиті до Google,
+// тому лишається в коді. Секретом є client_secret, якого implicit-флоу не потребує.
 const GOOGLE_CLIENT_ID = '920419028505-459nmrlmq5fqb6hmvhl5odclptgcct8f.apps.googleusercontent.com';
 
 const TOKENS_KEY = STORAGE.tokens;   // { accessToken, refreshToken } — наші JWT, не Google
