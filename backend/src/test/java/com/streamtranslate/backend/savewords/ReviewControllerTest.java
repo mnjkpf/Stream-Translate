@@ -1,6 +1,9 @@
 package com.streamtranslate.backend.savewords;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
+
+import java.time.temporal.ChronoUnit;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,7 +107,17 @@ class ReviewControllerTest {
         WordResponse afterResave = objectMapper.readValue(savedAgain, WordResponse.class);
 
         assertThat(afterResave.srsLevel()).isEqualTo(afterReview.srsLevel());
-        assertThat(afterResave.dueAt()).isEqualTo(afterReview.dueAt());
+
+        // Порівняння з допуском, а не на точну рівність. Причина не в тесті, а в
+        // точності зберігання: Instant.now() дає наносекунди, а timestamptz у Postgres
+        // тримає лише мікросекунди. dueAt після review приходить з ENTITY, що ще
+        // висить у сесії (saveAndFlush не перечитує рядок), а dueAt після повторного
+        // збереження — уже з БАЗИ, тобто з відкинутим наносекундним хвостом.
+        // На точній рівності тест проходив лише тоді, коли той хвіст випадково
+        // виявлявся нульовим: на Windows годинник тикає по 100 нс, тобто приблизно
+        // один запуск із десяти. Допуск в мілісекунду нічого не послаблює — тест
+        // ловить перепланування на ДНІ вперед, а не дрижання на мікросекунди.
+        assertThat(afterResave.dueAt()).isCloseTo(afterReview.dueAt(), within(1, ChronoUnit.MILLIS));
     }
 
     private String createWord(String auth, String text, String lemma) throws Exception {
