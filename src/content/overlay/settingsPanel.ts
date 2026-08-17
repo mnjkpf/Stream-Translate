@@ -9,10 +9,10 @@
 // чи в popup, завжди узгоджені між собою.
 
 import { adapter } from '../adapters/activeAdapter';
-import { MESSAGES } from '../../shared/i18n';
+import { MESSAGES, t, getLang, isLang, onLangChange, UI_LANGUAGES } from '../../shared/i18n';
 import { relocateFloatingUI } from './ui';
 import {
-  DEFAULT_MODEL, GEMINI_MODELS, SOURCE_LANGUAGES, TARGET_LANGUAGES
+  DEFAULT_MODEL, geminiModels, sourceLanguages, targetLanguages
 } from '../../shared/constants';
 import { createDropdown, type Dropdown } from '../../shared/dropdown';
 import { login, logout, getAuthStatus, isAuthError, type AuthResult } from '../../api/authClient';
@@ -26,6 +26,7 @@ interface SettingsFields {
   sourceLang: Dropdown;
   targetLang: Dropdown;
   model: Dropdown;
+  uiLang: Dropdown;
   save: HTMLButtonElement;
   status: HTMLElement;
   acctStatus: HTMLElement;
@@ -47,22 +48,62 @@ let authBusy = false;
 let panelEl: HTMLElement | null = null;
 let fields: SettingsFields | null = null;
 
+function getLangValue(): string {
+  return getLang();
+}
+
+async function applyUiLang(lang: string): Promise<void> {
+  if (!isLang(lang)) return;
+
+  // storage.onChanged розносить це в усі контексти: i18n тут перемкне мову,
+  // popup і дашборд перемалюються самі.
+  await chrome.storage.local.set({ [STORAGE.uiLang]: lang });
+
+  const status = await getAuthStatus();
+  if (!isAuthError(status) && status.loggedIn) {
+    chrome.runtime.sendMessage({ type: MSG.settingsUpdate, settings: { uiLang: lang } });
+  }
+}
+
+// Панель зібрана через innerHTML з підписами поточною мовою, тож перекласти її
+// на місці означало б перебирати вузли по одному. Дешевше й надійніше — знести
+// і дати їй зібратися заново при наступному відкритті: усі значення полів і так
+// живуть у storage, а не в DOM.
+onLangChange(() => {
+  if (panelEl) {
+    const wasVisible = panelEl.classList.contains('visible');
+    panelEl.remove();
+    panelEl = null;
+    fields = null;
+    if (wasVisible) toggleSettingsPanel();
+  }
+
+  // Кнопка в плеєрі живе окремо від панелі — у неї лише aria-label і title.
+  const button = document.getElementById(SETTINGS_BUTTON_ID);
+  if (button) {
+    button.setAttribute('aria-label', MESSAGES.settingsButtonLabel);
+    button.title = MESSAGES.settingsButtonLabel;
+  }
+});
+
 function buildPanel(): HTMLElement {
   const panel = document.createElement('div');
   panel.id = SETTINGS_PANEL_ID;
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', MESSAGES.settingsPanelAriaLabel);
 
+  // escapeHtml тут не потрібен: усе, що підставляється, — наші власні рядки зі
+  // словника, а не дані користувача чи відповідь моделі.
   panel.innerHTML = `
     <div class="subtr-settings-head">Subtitle Translator</div>
     <div class="subtr-account">
       <span id="subtr-acct-status" class="subtr-acct-status"></span>
       <button type="button" id="subtr-acct-btn" class="subtr-acct-btn"></button>
     </div>
-    <label>Ключ Gemini</label>
+    <label>${t('labelGeminiKey')}</label>
     <div class="subtr-seg" id="subtr-set-keySource">
-      <button type="button" class="subtr-seg-btn active" data-key-source="own">Свій ключ</button>
-      <button type="button" class="subtr-seg-btn" data-key-source="proxy">Вбудований</button>
+      <button type="button" class="subtr-seg-btn active" data-key-source="own">${t('keySourceOwn')}</button>
+      <button type="button" class="subtr-seg-btn" data-key-source="proxy">${t('keySourceProxy')}</button>
     </div>
     <div id="subtr-set-ownKey">
       <label for="subtr-set-apiKey">API Key</label>
@@ -71,13 +112,15 @@ function buildPanel(): HTMLElement {
     <div id="subtr-set-proxy" hidden>
       <div class="subtr-proxy-hint" id="subtr-set-proxyHint"></div>
     </div>
-    <label>Мова субтитрів</label>
+    <label>${t('labelSourceLang')}</label>
     <div id="subtr-set-sourceLang"></div>
-    <label>Перекладати на</label>
+    <label>${t('labelTargetLang')}</label>
     <div id="subtr-set-targetLang"></div>
-    <label>Модель Gemini</label>
+    <label>${t('labelModel')}</label>
     <div id="subtr-set-model"></div>
-    <button type="button" id="subtr-set-save">Зберегти</button>
+    <label>${t('labelUiLang')}</label>
+    <div id="subtr-set-uiLang"></div>
+    <button type="button" id="subtr-set-save">${t('btnSave')}</button>
     <div id="subtr-set-status"></div>
   `;
 
@@ -85,18 +128,23 @@ function buildPanel(): HTMLElement {
 
   // Кастомні дропдауни (shared/dropdown.ts) монтуємо в порожні контейнери:
   // нативний <select> малює список засобами ОС і не піддається стилізації.
-  const sourceLang = createDropdown(SOURCE_LANGUAGES, 'English', 'Мова субтитрів');
-  const targetLang = createDropdown(TARGET_LANGUAGES, 'Ukrainian', 'Перекладати на');
-  const model = createDropdown(GEMINI_MODELS, DEFAULT_MODEL, 'Модель Gemini');
+  const sourceLang = createDropdown(sourceLanguages(), 'English', t('labelSourceLang'));
+  const targetLang = createDropdown(targetLanguages(), 'Ukrainian', t('labelTargetLang'));
+  const model = createDropdown(geminiModels(), DEFAULT_MODEL, t('labelModel'));
+  // Мова інтерфейсу застосовується одразу при виборі, без «Зберегти»: перемикач
+  // мови, який нічого не змінює до натискання кнопки, читається як зламаний.
+  const uiLang = createDropdown(UI_LANGUAGES, getLangValue(), t('labelUiLang'), applyUiLang);
   panel.querySelector('#subtr-set-sourceLang')!.appendChild(sourceLang.el);
   panel.querySelector('#subtr-set-targetLang')!.appendChild(targetLang.el);
   panel.querySelector('#subtr-set-model')!.appendChild(model.el);
+  panel.querySelector('#subtr-set-uiLang')!.appendChild(uiLang.el);
 
   fields = {
     apiKey: panel.querySelector('#subtr-set-apiKey')!,
     sourceLang,
     targetLang,
     model,
+    uiLang,
     save: panel.querySelector('#subtr-set-save')!,
     status: panel.querySelector('#subtr-set-status')!,
     acctStatus: panel.querySelector('#subtr-acct-status')!,
@@ -142,7 +190,8 @@ function buildPanel(): HTMLElement {
       sourceLang: fields!.sourceLang.getValue(),
       targetLang: fields!.targetLang.getValue(),
       model: fields!.model.getValue(),
-      keySource
+      keySource,
+      uiLang: fields!.uiLang.getValue()
     };
 
     // Локально завжди (background читає саме storage при кожному перекладі).
@@ -184,6 +233,7 @@ function loadFieldsFromStorage(): void {
     if (data.sourceLang) fields.sourceLang.setValue(data.sourceLang);
     if (data.targetLang) fields.targetLang.setValue(data.targetLang);
     fields.model.setValue(data.model || DEFAULT_MODEL); // M-6: значення, а не лише placeholder
+    if (isLang(data[STORAGE.uiLang])) fields.uiLang.setValue(data[STORAGE.uiLang]);
     keySource = data.keySource || KEY_SOURCE.own;
     renderKeySource();
   });
@@ -208,8 +258,8 @@ function renderKeySource(): void {
     if (!fields) return;
     const loggedIn = !isAuthError(status) && status.loggedIn;
     fields.proxyHint.textContent = loggedIn
-      ? 'Переклад іде через сервер — власний ключ не потрібен.'
-      : 'Потрібно увійти — вбудований ключ доступний лише з акаунтом.';
+      ? t('proxyHintOk')
+      : t('proxyHintLoginRequired');
     fields.proxyHint.className = loggedIn ? 'subtr-proxy-hint' : 'subtr-proxy-hint warn';
   });
 }

@@ -11,12 +11,13 @@ const path = require('path');
 
 const DIST_TEST_DIR = path.join(__dirname, '..', 'dist', 'test');
 
-let subtitleParser, cacheKey, youtubeCaptions, pronunciationMatch;
+let subtitleParser, cacheKey, youtubeCaptions, pronunciationMatch, i18n;
 try {
   subtitleParser = require(path.join(DIST_TEST_DIR, 'subtitleParser.js'));
   cacheKey = require(path.join(DIST_TEST_DIR, 'cacheKey.js'));
   youtubeCaptions = require(path.join(DIST_TEST_DIR, 'youtubeCaptions.js'));
   pronunciationMatch = require(path.join(DIST_TEST_DIR, 'pronunciationMatch.js'));
+  i18n = require(path.join(DIST_TEST_DIR, 'i18n.js'));
 } catch (err) {
   console.error('Не вдалося завантажити зібрані модулі з dist/test/. Спочатку запусти: npm run build');
   console.error(err.message);
@@ -27,6 +28,7 @@ const { parseSRT, parseVTT, parseSubtitles, parseYouTubeJson3 } = subtitleParser
 const { hashString, buildCacheKey } = cacheKey;
 const { LANGUAGE_CODE_MAP, buildCaptionCandidates, parseTimedtextBody, pollForMatchingTracks } = youtubeCaptions;
 const { comparePronunciation, normalizeWord, words } = pronunciationMatch;
+const { MESSAGES, t, setLang, localeTag, isLang, UI_LANGUAGES } = i18n;
 
 let passed = 0;
 let failed = 0;
@@ -637,6 +639,91 @@ test('parses a valid JSON array string', () => {
 
   test('collapses multiple spaces and newlines into clean tokens', () => {
     assert.deepStrictEqual(words('a  b\nc'), ['a', 'b', 'c']);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  console.log('\ni18n');
+
+  test('Slavic plural picks all three forms; English picks two', () => {
+    setLang('uk');
+    assert.strictEqual(t('wordsCount', 1), '1 слово');
+    assert.strictEqual(t('wordsCount', 2), '2 слова');
+    assert.strictEqual(t('wordsCount', 5), '5 слів');
+    // 11 і 21 — саме та пара, на якій ламається наївне n % 10
+    assert.strictEqual(t('wordsCount', 11), '11 слів');
+    assert.strictEqual(t('wordsCount', 21), '21 слово');
+
+    setLang('pl');
+    assert.strictEqual(t('wordsCount', 1), '1 słowo');
+    assert.strictEqual(t('wordsCount', 3), '3 słowa');
+    assert.strictEqual(t('wordsCount', 5), '5 słów');
+
+    setLang('en');
+    assert.strictEqual(t('wordsCount', 1), '1 word');
+    assert.strictEqual(t('wordsCount', 0), '0 words');
+  });
+
+  test('plural form is driven by the first NUMBER, not by numeric-looking strings', () => {
+    setLang('uk');
+    // Номери сторінок передаються рядками саме для цього: інакше форму «записів»
+    // визначав би номер сторінки, і на 2-й сторінці був би «1 записи».
+    assert.strictEqual(t('pageInfo', '2', '5', 1), 'Сторінка 2 з 5 · 1 запис');
+    assert.strictEqual(t('pageInfo', '2', '5', 42), 'Сторінка 2 з 5 · 42 записи');
+  });
+
+  test('MESSAGES gives a string without placeholders and a function with them', () => {
+    setLang('uk');
+    assert.strictEqual(typeof MESSAGES.close, 'string');
+    assert.strictEqual(typeof MESSAGES.loadButtonLoaded, 'function');
+    assert.strictEqual(MESSAGES.difficultyDetail(4, 10), 'Знайомих слів: 4 з 10');
+    assert.strictEqual(MESSAGES.genericApiError(503, 'oops'), 'Gemini API 503: oops');
+  });
+
+  test('offset keeps its sign and one decimal in every language', () => {
+    setLang('uk');
+    assert.ok(MESSAGES.offsetIndicator(0).includes('+0.0'));
+    assert.ok(MESSAGES.offsetIndicator(-1.5).includes('-1.5'));
+    setLang('pl');
+    assert.ok(MESSAGES.offsetIndicator(2).includes('+2.0'));
+  });
+
+  // Головний захист від забутого перекладу: додав ключ, скопіював українську
+  // заглушку в EN/PL — і тест впаде, назвавши точні ключі.
+  test('no Cyrillic leaks into the English or Polish dictionary', () => {
+    const CYRILLIC = /[Ѐ-ӿ]/;
+    for (const lang of ['en', 'pl']) {
+      setLang(lang);
+      const leaked = Object.keys(MESSAGES).filter((key) => CYRILLIC.test(t(key)));
+      assert.deepStrictEqual(leaked, [], `${lang}: ${leaked.join(', ')}`);
+    }
+  });
+
+  test('every key resolves to a non-empty string with no leftover markup', () => {
+    const UNRESOLVED = /\{\d+\}|\[[^\]]*\|/;
+    for (const lang of ['uk', 'en', 'pl']) {
+      setLang(lang);
+      for (const key of Object.keys(MESSAGES)) {
+        const value = t(key, 1, 2);
+        assert.ok(value.trim() !== '', `${lang}/${key} порожній`);
+        assert.ok(!UNRESOLVED.test(value), `${lang}/${key} лишив підстановку: ${value}`);
+      }
+    }
+  });
+
+  test('locale tag follows the chosen language (dates must not stay Ukrainian)', () => {
+    setLang('en');
+    assert.strictEqual(localeTag(), 'en-US');
+    setLang('pl');
+    assert.strictEqual(localeTag(), 'pl-PL');
+    setLang('uk');
+    assert.strictEqual(localeTag(), 'uk-UA');
+  });
+
+  test('isLang guards storage values; UI_LANGUAGES lists exactly the three', () => {
+    assert.strictEqual(isLang('pl'), true);
+    assert.strictEqual(isLang('de'), false);
+    assert.strictEqual(isLang(undefined), false);
+    assert.deepStrictEqual(UI_LANGUAGES.map((o) => o.value), ['uk', 'en', 'pl']);
   });
 
   // ═══════════════════════════════════════════════════════════

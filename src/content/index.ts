@@ -3,6 +3,7 @@
 // esbuild (build.mjs) резолвить увесь граф import/export звідси.
 
 import { adapter, isSiteSupported } from './adapters/activeAdapter';
+import { initI18n } from '../shared/i18n';
 import { state } from './state';
 import {
   waitForVideo,
@@ -51,6 +52,10 @@ function checkVideoReattach(): void {
 }
 
 async function init(): Promise<void> {
+  // Мова інтерфейсу — до будь-якого рендера: createUI() і кнопка в плеєрі
+  // беруть підписи зі словника вже на етапі створення.
+  await initI18n();
+
   state.video = await waitForVideo();
   createUI();
   setupInteraction();

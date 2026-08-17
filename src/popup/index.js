@@ -1,25 +1,19 @@
 import {
-  DEFAULT_MODEL, GEMINI_MODELS, SOURCE_LANGUAGES, TARGET_LANGUAGES
+  DEFAULT_MODEL, geminiModels, sourceLanguages, targetLanguages
 } from '../shared/constants';
 import { createDropdown } from '../shared/dropdown';
+import {
+  initI18n, applyStaticI18n, onLangChange, t, getLang, localeTag, isLang, UI_LANGUAGES
+} from '../shared/i18n';
 import { login, logout, getAuthStatus, isAuthError } from '../api/authClient';
 import { MSG, STORAGE, SETTINGS_KEYS, KEY_SOURCE, touched } from '../shared/messages';
 
 const $ = (id) => document.getElementById(id);
 const send = (msg) => chrome.runtime.sendMessage(msg);
 
-// Кастомні дропдауни замість <select> — див. shared/dropdown.ts.
-const sourceLang = createDropdown(SOURCE_LANGUAGES, 'English', 'Мова субтитрів');
-const targetLang = createDropdown(TARGET_LANGUAGES, 'Ukrainian', 'Перекладати на');
-const model = createDropdown(GEMINI_MODELS, DEFAULT_MODEL, 'Модель Gemini');
-$('sourceLangDd').appendChild(sourceLang.el);
-$('targetLangDd').appendChild(targetLang.el);
-$('modelDd').appendChild(model.el);
-
 const els = {
   // settings
-  apiKey: $('apiKey'), sourceLang, targetLang, model,
-  save: $('save'), status: $('status'),
+  apiKey: $('apiKey'), save: $('save'), status: $('status'),
   // profile
   profileLoggedOut: $('profileLoggedOut'), profileLoggedIn: $('profileLoggedIn'),
   profileLoginBtn: $('profileLoginBtn'), logoutBtn: $('logoutBtn'),
@@ -35,11 +29,70 @@ const els = {
   proxyBlock: $('proxyBlock'), proxyHint: $('proxyHint'), quotaRow: $('quotaRow')
 };
 
+// Кастомні дропдауни замість <select> — див. shared/dropdown.ts. Створюються не
+// на рівні модуля, а в mountDropdowns(): підказки в списках локалізовані, тож до
+// initI18n() вони зібралися б не тією мовою.
+const dd = { sourceLang: null, targetLang: null, model: null, uiLang: null };
+
 let loggedIn = false;
 let allWords = [];
 let authBusy = false;
 let activeTab = 'profile';
 let keySource = KEY_SOURCE.own;
+let createdAtIso = ''; // тримаємо ISO, а не готовий рядок: формат дати залежить від мови
+
+// ── Дропдауни ────────────────────────────────────────────────────────────────
+// Перезбирає списки поточною мовою, зберігаючи вибрані значення. Дешевше і
+// надійніше, ніж мутувати вже намальовані пункти зсередини dropdown.ts.
+function mountDropdowns() {
+  const keep = {
+    sourceLang: dd.sourceLang?.getValue() ?? 'English',
+    targetLang: dd.targetLang?.getValue() ?? 'Ukrainian',
+    model: dd.model?.getValue() ?? DEFAULT_MODEL,
+    // Мову беремо з i18n, а не з попереднього дропдауна: перемкнути її могли в
+    // панелі на сторінці, і тоді старе значення дропдауна вже неправильне.
+    uiLang: getLang()
+  };
+
+  const mount = (containerId, options, value, ariaKey, onChange) => {
+    const container = $(containerId);
+    container.textContent = '';
+    const widget = createDropdown(options, value, t(ariaKey), onChange);
+    container.appendChild(widget.el);
+    return widget;
+  };
+
+  dd.sourceLang = mount('sourceLangDd', sourceLanguages(), keep.sourceLang, 'labelSourceLang');
+  dd.targetLang = mount('targetLangDd', targetLanguages(), keep.targetLang, 'labelTargetLang');
+  dd.model = mount('modelDd', geminiModels(), keep.model, 'labelModel');
+
+  // Мова інтерфейсу застосовується одразу, без «Зберегти»: перемикач мови, який
+  // нічого не змінює до натискання кнопки, читається як зламаний.
+  dd.uiLang = mount('uiLangDd', UI_LANGUAGES, keep.uiLang, 'labelUiLang', applyUiLang);
+}
+
+async function applyUiLang(lang) {
+  if (!isLang(lang)) return;
+
+  // storage.onChanged підхопить це і в i18n (тут), і в панелі на сторінці,
+  // і в дашборді — окремо розсилати нічого не треба.
+  await chrome.storage.local.set({ [STORAGE.uiLang]: lang });
+
+  // На акаунт — щоб мова переїхала разом з рештою налаштувань на інший пристрій.
+  if (loggedIn) send({ type: MSG.settingsUpdate, settings: { uiLang: lang } });
+}
+
+// Перемалювання всього, що вже намальоване. Динамічні частини перечитуються
+// звідси ж, бо їхній текст збирається в JS і сам не оновиться.
+function renderI18n() {
+  applyStaticI18n(document);
+  mountDropdowns();
+  renderKeySource();
+  renderStats();
+  renderSince();
+  if (activeTab === 'words') renderWords();
+  if (keySource === KEY_SOURCE.proxy) loadQuota();
+}
 
 // ── Вкладки ──────────────────────────────────────────────────────────────────
 document.querySelectorAll('.pp-tab').forEach((tab) => {
@@ -48,7 +101,7 @@ document.querySelectorAll('.pp-tab').forEach((tab) => {
 
 function activateTab(name) {
   activeTab = name;
-  document.querySelectorAll('.pp-tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.pp-tab').forEach((t2) => t2.classList.toggle('active', t2.dataset.tab === name));
   document.querySelectorAll('.pp-panel').forEach((p) => { p.hidden = p.dataset.panel !== name; });
   // Перечитуємо щоразу, а не лише коли список порожній: інакше слово, збережене
   // на сторінці поки popup відкритий, не з'явилося б до повного перевідкриття.
@@ -74,7 +127,16 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 // ── Ініт ─────────────────────────────────────────────────────────────────────
-refreshAuthState();
+// Мова — перше, що має бути готове: усе, що малюється нижче, вже враховує її.
+main();
+
+async function main() {
+  await initI18n();
+  applyStaticI18n(document);
+  mountDropdowns();
+  onLangChange(renderI18n);
+  await refreshAuthState();
+}
 
 async function refreshAuthState() {
   const status = await getAuthStatus();
@@ -120,10 +182,10 @@ function renderKeySource() {
 
   // Вбудований ключ потребує акаунта: без логіну нема кого рахувати в квоті.
   if (proxy && !loggedIn) {
-    els.proxyHint.textContent = 'Потрібно увійти — вбудований ключ доступний лише з акаунтом.';
+    els.proxyHint.textContent = t('proxyHintLoginRequired');
     els.proxyHint.className = 'hint warn';
   } else if (proxy) {
-    els.proxyHint.textContent = 'Переклад іде через сервер — власний ключ не потрібен.';
+    els.proxyHint.textContent = t('proxyHintOk');
     els.proxyHint.className = 'hint';
   }
 }
@@ -137,8 +199,8 @@ async function loadQuota() {
   const q = r.quota;
   els.quotaRow.hidden = false;
   els.quotaRow.textContent = q.enabled
-    ? `Вбудований ключ: залишилось ${q.remaining} з ${q.limit} на сьогодні`
-    : 'Вбудований ключ зараз недоступний — користуйтесь своїм';
+    ? t('quotaLeft', q.remaining, q.limit)
+    : t('quotaUnavailable');
 }
 
 // ── Профіль + налаштування з бекенду ─────────────────────────────────────────
@@ -151,30 +213,43 @@ async function loadMe() {
   els.profileName.textContent = name;
   els.profileEmail.textContent = me.email || '';
   els.profileAvatar.textContent = (name || me.email || '?').charAt(0);
-  els.profileSince.textContent = me.createdAt ? `На сервісі з ${formatDate(me.createdAt)}` : '';
+  createdAtIso = me.createdAt || '';
+  renderSince();
 
   // Налаштування: бекенд у пріоритеті, порожні поля добираємо зі storage/дефолту.
   const s = me.settings || {};
   chrome.storage.local.get([...SETTINGS_KEYS], (local) => {
     els.apiKey.value = s.apiKey || local.apiKey || '';
-    els.sourceLang.setValue(s.sourceLang || local.sourceLang || 'English');
-    els.targetLang.setValue(s.targetLang || local.targetLang || 'Ukrainian');
-    els.model.setValue(s.model || local.model || DEFAULT_MODEL);
+    dd.sourceLang.setValue(s.sourceLang || local.sourceLang || 'English');
+    dd.targetLang.setValue(s.targetLang || local.targetLang || 'Ukrainian');
+    dd.model.setValue(s.model || local.model || DEFAULT_MODEL);
     keySource = s.keySource || local.keySource || KEY_SOURCE.own;
     renderKeySource();
     if (keySource === KEY_SOURCE.proxy) loadQuota();
+
+    // Мова з акаунта застосовується, лише якщо локально свою ще не обирали:
+    // інакше вибір, зроблений щойно на цьому пристрої, перебивався б значенням
+    // із сервера при кожному відкритті popup.
+    if (!isLang(local[STORAGE.uiLang]) && isLang(s.uiLang)) {
+      chrome.storage.local.set({ [STORAGE.uiLang]: s.uiLang });
+    }
   });
 }
 
 function loadSettingsFromStorage() {
   chrome.storage.local.get([...SETTINGS_KEYS], (data) => {
     if (data.apiKey) els.apiKey.value = data.apiKey;
-    if (data.sourceLang) els.sourceLang.setValue(data.sourceLang);
-    if (data.targetLang) els.targetLang.setValue(data.targetLang);
-    els.model.setValue(data.model || DEFAULT_MODEL);
+    if (data.sourceLang) dd.sourceLang.setValue(data.sourceLang);
+    if (data.targetLang) dd.targetLang.setValue(data.targetLang);
+    dd.model.setValue(data.model || DEFAULT_MODEL);
+    if (isLang(data[STORAGE.uiLang])) dd.uiLang.setValue(data[STORAGE.uiLang]);
     keySource = data.keySource || KEY_SOURCE.own;
     renderKeySource();
   });
+}
+
+function renderSince() {
+  els.profileSince.textContent = createdAtIso ? t('memberSince', formatDate(createdAtIso)) : '';
 }
 
 // ── Збереження налаштувань ───────────────────────────────────────────────────
@@ -183,22 +258,23 @@ els.save.addEventListener('click', async () => {
 
   // Свій ключ обов'язковий лише в режимі 'own' — у режимі проксі перекладає сервер.
   if (keySource === KEY_SOURCE.own && !apiKey) {
-    els.status.textContent = 'Введіть API ключ';
+    els.status.textContent = t('settingsApiKeyRequired');
     els.status.className = 'err';
     return;
   }
   if (keySource === KEY_SOURCE.proxy && !loggedIn) {
-    els.status.textContent = 'Увійдіть, щоб використати вбудований ключ';
+    els.status.textContent = t('settingsLoginRequired');
     els.status.className = 'err';
     return;
   }
 
   const settings = {
     apiKey,
-    sourceLang: els.sourceLang.getValue(),
-    targetLang: els.targetLang.getValue(),
-    model: els.model.getValue(),
-    keySource
+    sourceLang: dd.sourceLang.getValue(),
+    targetLang: dd.targetLang.getValue(),
+    model: dd.model.getValue(),
+    keySource,
+    uiLang: dd.uiLang.getValue()
   };
 
   // Локально завжди (background/translate читають саме storage).
@@ -207,14 +283,14 @@ els.save.addEventListener('click', async () => {
   if (loggedIn) {
     const r = await send({ type: MSG.settingsUpdate, settings });
     if (r && r.error) {
-      els.status.textContent = 'Збережено локально (бекенд недоступний)';
+      els.status.textContent = t('savedLocallyOnly');
       els.status.className = 'err';
       setTimeout(() => { els.status.textContent = ''; }, 2500);
       return;
     }
   }
 
-  els.status.textContent = '✓ Збережено';
+  els.status.textContent = t('settingsSaved');
   els.status.className = 'ok';
   setTimeout(() => { els.status.textContent = ''; }, 2000);
   if (keySource === KEY_SOURCE.proxy) loadQuota();
@@ -227,7 +303,7 @@ async function loadWords() {
     // Помилку показуємо, лише якщо користувач саме дивиться на вкладку слів.
     if (activeTab === 'words') {
       els.wordsList.innerHTML = '';
-      els.wordsList.appendChild(emptyRow(`Помилка: ${r ? r.error : 'немає відповіді'}`));
+      els.wordsList.appendChild(emptyRow(t('errorWithText', r ? r.error : t('noResponse'))));
     }
     return;
   }
@@ -244,7 +320,7 @@ function renderStats() {
   els.statTotal.textContent = String(allWords.length);
   els.statWeek.textContent = String(week);
   els.statPairs.textContent = String(pairs.size);
-  els.wordsCount.textContent = allWords.length ? `${allWords.length} слів` : '';
+  els.wordsCount.textContent = allWords.length ? t('wordsCount', allWords.length) : '';
 }
 
 function renderWords() {
@@ -258,7 +334,7 @@ function renderWords() {
   els.wordsList.innerHTML = '';
   if (items.length === 0) {
     els.wordsList.appendChild(emptyRow(
-      allWords.length === 0 ? 'Немає збережених слів' : 'Нічого не знайдено'));
+      allWords.length === 0 ? t('wordsEmpty') : t('nothingFound')));
     return;
   }
 
@@ -303,7 +379,7 @@ function renderWords() {
     del.className = 'pp-word-del';
     del.type = 'button';
     del.textContent = '×';
-    del.title = 'Видалити';
+    del.title = t('deleteTitle');
     del.addEventListener('click', () => removeWord(w.id));
 
     row.appendChild(main);
@@ -359,7 +435,7 @@ async function doAuth() {
 
 function formatDate(iso) {
   try {
-    return new Date(iso).toLocaleDateString('uk-UA', { year: 'numeric', month: 'long', day: 'numeric' });
+    return new Date(iso).toLocaleDateString(localeTag(), { year: 'numeric', month: 'long', day: 'numeric' });
   } catch {
     return '';
   }

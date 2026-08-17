@@ -12,6 +12,9 @@ public record SettingsUpdateRequest(
         String sourceLang,
         String targetLang,
         String model,
-        String keySource
+        String keySource,
+        // Мова інтерфейсу розширення: 'uk' | 'en' | 'pl'. Не впливає ні на переклад,
+        // ні на промпт — це виключно мова підписів, яку користувач обирає сам.
+        String uiLang
 ) {
 }

@@ -64,6 +64,11 @@ export const STORAGE = {
   model: 'model',
   keySource: 'keySource', // 'own' | 'proxy' — див. KEY_SOURCE нижче
 
+  // Мова інтерфейсу: 'uk' | 'en' | 'pl' (див. shared/i18n.ts). Свідомо тут, а
+  // не в chrome.i18n з теками _locales: той механізм читає мову браузера і не
+  // дає її перевизначити, а тут мову обирає користувач.
+  uiLang: 'uiLang',
+
   // Автентифікація
   tokens: 'authTokens',
   profile: 'authProfile',
@@ -82,7 +87,8 @@ export const SETTINGS_KEYS = [
   STORAGE.sourceLang,
   STORAGE.targetLang,
   STORAGE.model,
-  STORAGE.keySource
+  STORAGE.keySource,
+  STORAGE.uiLang
 ] as const;
 
 // Чи зачепили зміни storage хоч один із перелічених ключів.

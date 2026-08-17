@@ -105,7 +105,10 @@ if (!isProd) {
       { in: 'src/content/subtitles/subtitleParser.ts', out: 'subtitleParser' },
       { in: 'src/content/subtitles/youtubeCaptions.ts', out: 'youtubeCaptions' },
       { in: 'src/shared/cacheKey.ts', out: 'cacheKey' },
-      { in: 'src/shared/pronunciationMatch.ts', out: 'pronunciationMatch' }
+      { in: 'src/shared/pronunciationMatch.ts', out: 'pronunciationMatch' },
+      // i18n тестується без chrome.*: initI18n() (єдине місце, що читає storage)
+      // у тестах не викликається, мова задається напряму через setLang().
+      { in: 'src/shared/i18n.ts', out: 'i18n' }
     ],
     outdir: `${OUT_DIR}/test`,
     bundle: true,

@@ -7,6 +7,7 @@
 //   - fetch із воркера до домену з host_permissions НЕ підпадає під CORS,
 //     тому бекенду не потрібна окрема CORS-конфігурація для розширення.
 
+import { t } from '../shared/i18n';
 import { STORAGE } from '../shared/messages';
 
 // Адреса бекенду підставляється на збірці (build.mjs, esbuild define) — у dev
@@ -49,7 +50,7 @@ export async function login(): Promise<AuthStatus> {
     body: JSON.stringify({ idToken })
   });
   if (!resp.ok) {
-    throw new Error(`Бекенд відхилив логін (${resp.status})`);
+    throw new Error(t('backendRejectedLogin', resp.status));
   }
 
   const tokens = (await resp.json()) as Tokens;
@@ -257,7 +258,7 @@ export async function translateViaProxy(payload: {
   if (resp.ok) return (await resp.json()) as ProxyTranslation;
 
   let code = 'UPSTREAM_ERROR';
-  let message = `Помилка перекладу (${resp.status})`;
+  let message = t('translateFailed', resp.status);
   try {
     const body = await resp.json();
     code = body.code ?? code;
@@ -398,7 +399,7 @@ async function pullSettingsIntoStorage(): Promise<void> {
     const me = await getMe();
     const s = me.settings ?? {};
     const patch: Record<string, string> = {};
-    for (const key of ['apiKey', 'sourceLang', 'targetLang', 'model', 'keySource'] as const) {
+    for (const key of ['apiKey', 'sourceLang', 'targetLang', 'model', 'keySource', 'uiLang'] as const) {
       if (s[key]) patch[key] = s[key];
     }
     if (Object.keys(patch).length > 0) await chrome.storage.local.set(patch);
@@ -460,7 +461,7 @@ async function getGoogleIdToken(): Promise<string> {
   // id_token приходить у фрагменті (#id_token=...&...), не в query.
   const fragment = new URL(redirectResponse).hash.slice(1);
   const idToken = new URLSearchParams(fragment).get('id_token');
-  if (!idToken) throw new Error('Google не повернув id_token');
+  if (!idToken) throw new Error(t('googleNoIdToken'));
   return idToken;
 }
 

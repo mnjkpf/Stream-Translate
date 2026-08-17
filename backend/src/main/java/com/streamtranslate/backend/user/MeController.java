@@ -64,6 +64,10 @@ public class MeController {
         // 'own' | 'proxy' — без цього рядка вибір «вбудований ключ» не переживав
         // би перехід на інший пристрій: розширення читає keySource назад при логіні.
         putIfPresent(settings, "keySource", request.keySource());
+        // Мова інтерфейсу ('uk' | 'en' | 'pl'). Валідація тут свідомо відсутня:
+        // невідоме значення розширення просто проігнорує і візьме мову браузера,
+        // тож 400-та на нього була б суворіша за наслідки.
+        putIfPresent(settings, "uiLang", request.uiLang());
         user.setSettings(settings);
 
         return MeResponse.from(userRepository.save(user), this::decryptSettings);

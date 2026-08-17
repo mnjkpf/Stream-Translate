@@ -3,7 +3,7 @@
 
 import { adapter } from '../adapters/activeAdapter';
 import { state } from '../state';
-import { MESSAGES } from '../../shared/i18n';
+import { MESSAGES, onLangChange } from '../../shared/i18n';
 import { parseSubtitles } from '../subtitles/subtitleParser';
 import { readFileSmart, attachToVideo } from '../subtitles/subtitles';
 import { getSettingsPanelEl } from './settingsPanel';
@@ -76,6 +76,17 @@ export function createUI(): void {
   state.toast.id = 'subtr-toast';
   state.toast.setAttribute('role', 'alert');
   document.body.appendChild(state.toast);
+
+  // Ці два підписи вже намальовані й самі себе не перечитають (решта текстів
+  // overlay збирається на кожну дію користувача, тож підхопить нову мову сама).
+  onLangChange(() => {
+    state.tooltip?.setAttribute('aria-label', MESSAGES.tooltipAriaLabel);
+    if (state.loadBtn) {
+      state.loadBtn.textContent = state.cues.length > 0
+        ? MESSAGES.loadButtonLoaded(state.cues.length)
+        : MESSAGES.loadButtonIdle;
+    }
+  });
 
   // Гарячі клавіші для зсуву: [ і ]
   document.addEventListener('keydown', (e) => {

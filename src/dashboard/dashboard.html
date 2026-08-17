@@ -192,28 +192,31 @@
         <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
       </div>
       <div>
-        <h1>Статистика та історія</h1>
+        <h1 data-i18n="dashTitle">Статистика та історія</h1>
         <div class="sub" id="headerSub">Subtitle Translator</div>
       </div>
     </header>
 
-    <div id="loggedOut" class="card empty" hidden>
+    <!-- data-i18n перекриває текст розмітки на старті (applyStaticI18n у
+         dashboard.js). Українська лишається в HTML як запасний варіант: сторінка
+         з поламаним JS має читатись, а не бути порожньою. -->
+    <div id="loggedOut" class="card empty" hidden data-i18n="dashLoginPrompt">
       Увійдіть у розширенні, щоб побачити свою статистику та історію перекладів.
     </div>
 
     <div id="content" hidden>
       <div class="totals">
-        <div class="total"><div class="total-value" id="totalTranslations">0</div><div class="total-label">Перекладів за період</div></div>
-        <div class="total"><div class="total-value" id="totalWords">0</div><div class="total-label">Збережено слів</div></div>
-        <div class="total"><div class="total-value" id="activeDays">0</div><div class="total-label">Активних днів</div></div>
-        <div class="total"><div class="total-value" id="bestStreak">0</div><div class="total-label">Найдовша серія</div></div>
+        <div class="total"><div class="total-value" id="totalTranslations">0</div><div class="total-label" data-i18n="totalTranslationsLabel">Перекладів за період</div></div>
+        <div class="total"><div class="total-value" id="totalWords">0</div><div class="total-label" data-i18n="totalWordsLabel">Збережено слів</div></div>
+        <div class="total"><div class="total-value" id="activeDays">0</div><div class="total-label" data-i18n="activeDaysLabel">Активних днів</div></div>
+        <div class="total"><div class="total-value" id="bestStreak">0</div><div class="total-label" data-i18n="bestStreakLabel">Найдовша серія</div></div>
       </div>
 
       <!-- Повторення — найперше на сторінці: це єдиний блок, який вимагає
            дії просто зараз, решта лише показує, що вже сталось. -->
       <div class="card" id="reviewCard">
         <div class="card-head">
-          <div class="card-title">Повторення</div>
+          <div class="card-title" data-i18n="cardReview">Повторення</div>
           <div class="review-progress" id="reviewProgress"></div>
         </div>
         <div id="reviewBody"></div>
@@ -222,46 +225,46 @@
       <!-- Часті пошуки: показуємо, лише коли є що показати (див. index.js) -->
       <div class="card" id="frequentCard" hidden>
         <div class="card-head">
-          <div class="card-title">Ти постійно це шукаєш</div>
+          <div class="card-title" data-i18n="cardFrequent">Ти постійно це шукаєш</div>
         </div>
         <div id="frequentList"></div>
-        <div class="note">Слова, які ти перекладав кілька разів, але не зберіг.</div>
+        <div class="note" data-i18n="frequentNote">Слова, які ти перекладав кілька разів, але не зберіг.</div>
       </div>
 
       <div class="card">
         <div class="card-head">
-          <div class="card-title">Активність</div>
+          <div class="card-title" data-i18n="cardActivity">Активність</div>
           <div class="filters">
             <div class="seg" id="periodFilter">
-              <button type="button" class="seg-btn" data-days="7">7 днів</button>
-              <button type="button" class="seg-btn active" data-days="30">30 днів</button>
-              <button type="button" class="seg-btn" data-days="90">90 днів</button>
+              <button type="button" class="seg-btn" data-days="7" data-i18n="days7">7 днів</button>
+              <button type="button" class="seg-btn active" data-days="30" data-i18n="days30">30 днів</button>
+              <button type="button" class="seg-btn" data-days="90" data-i18n="days90">90 днів</button>
             </div>
             <div class="seg" id="seriesFilter">
-              <button type="button" class="seg-btn active" data-series="both">Усе</button>
-              <button type="button" class="seg-btn" data-series="translations">Переклади</button>
-              <button type="button" class="seg-btn" data-series="words">Слова</button>
+              <button type="button" class="seg-btn active" data-series="both" data-i18n="seriesAll">Усе</button>
+              <button type="button" class="seg-btn" data-series="translations" data-i18n="seriesTranslations">Переклади</button>
+              <button type="button" class="seg-btn" data-series="words" data-i18n="seriesWords">Слова</button>
             </div>
           </div>
         </div>
-        <svg id="chart" role="img" aria-label="Графік активності за обраний період"></svg>
+        <svg id="chart" role="img" data-i18n-aria="chartAria" aria-label="Графік активності за обраний період"></svg>
         <div class="legend" id="legend"></div>
       </div>
 
       <div class="card">
         <div class="card-head">
-          <div class="card-title">Історія перекладів</div>
+          <div class="card-title" data-i18n="cardHistory">Історія перекладів</div>
           <div style="flex:1; min-width:220px; max-width:340px">
-            <input type="text" id="historySearch" class="search" placeholder="Пошук за словом або перекладом…">
+            <input type="text" id="historySearch" class="search" placeholder="Пошук за словом або перекладом…" data-i18n-placeholder="historySearchPlaceholder">
           </div>
         </div>
         <div id="historyList"></div>
         <div class="pager" id="pager" hidden>
-          <button type="button" id="prevPage">← Новіші</button>
+          <button type="button" id="prevPage" data-i18n="prevPage">← Новіші</button>
           <span id="pageInfo"></span>
-          <button type="button" id="nextPage">Старіші →</button>
+          <button type="button" id="nextPage" data-i18n="nextPage">Старіші →</button>
         </div>
-        <div class="note">Історія зберігається 90 днів, після чого видаляється автоматично.</div>
+        <div class="note" data-i18n="historyNote">Історія зберігається 90 днів, після чого видаляється автоматично.</div>
       </div>
     </div>
   </div>

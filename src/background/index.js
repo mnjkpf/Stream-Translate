@@ -13,22 +13,18 @@ import {
   recordHistory, listHistory, getStats,
   listDueCards, gradeCard, getReviewCount, getFrequentLookups
 } from '../api/backendAuth';
+import { MESSAGES, initI18n } from '../shared/i18n';
 import { MSG, STORAGE, KEY_SOURCE } from '../shared/messages';
 
 const CACHE_PREFIX = 'tr:'; // tr:{mode}:{src}:{tgt}:{hash(context)}:{text_lowercase} — див. src/cacheKey.ts
 const WORDBOOK_MAX_ENTRIES = 2000; // M-2: ротація — старі записи витісняються новими
 const GEMINI_REQUEST_TIMEOUT_MS = 15000; // M-4: щоб tooltip не завис на "Перекладаю..." навічно
 
-// L-10: одне місце для всіх текстів помилок — мінімум для майбутньої i18n
-const MESSAGES = {
-  apiKeyMissing: 'API ключ не налаштовано. Натисни на іконку розширення.',
-  requestTimeout: (seconds) => `Gemini не відповів за ${seconds}с. Спробуйте ще раз.`,
-  rateLimited: 'Перевищено ліміт запитів до Gemini. Зачекайте трохи і спробуйте знову.',
-  overloaded: 'Gemini тимчасово недоступний (перевантажений). Спробуйте пізніше.',
-  modelNotFound: (model) => `Модель "${model}" не знайдена. Перевірте назву моделі в налаштуваннях.`,
-  genericApiError: (status, body) => `Gemini API ${status}: ${body}`,
-  emptyResponse: 'Порожня відповідь від Gemini'
-};
+// Тексти помилок живуть у спільному словнику (shared/i18n.ts): їх показує
+// tooltip на сторінці, тож вони мусять бути мовою інтерфейсу, а не хардкодом.
+// initI18n() тут не можна викликати «десь на старті» і забути: воркер
+// прокидається на кожне повідомлення, тому мову читаємо в обробнику — див.
+// handleTranslate(). Повторний виклик безпечний, він повертає той самий проміс.
 
 // Слухаємо повідомлення від content script
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -209,6 +205,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 async function handleTranslate({ text, context, mode, sourceUrl }) {
+  // Мова інтерфейсу для текстів помилок нижче. Воркер міг щойно прокинутись,
+  // тому це не «ініціалізація на старті», а гарантія перед першим MESSAGES.
+  await initI18n();
+
   const settings = await chrome.storage.local.get([
     STORAGE.apiKey, STORAGE.sourceLang, STORAGE.targetLang, STORAGE.model, STORAGE.keySource
   ]);

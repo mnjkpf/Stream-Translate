@@ -27,6 +27,14 @@ declare namespace chrome.storage {
   };
 }
 
+declare namespace chrome.i18n {
+  // Мова інтерфейсу БРАУЗЕРА (теги виду "uk", "en-US"). Використовується лише
+  // як стартове значення, поки користувач не обрав мову сам — переписати її
+  // через цей API неможливо, тому власний вибір живе в storage (STORAGE.uiLang).
+  // Доступний без жодного дозволу в manifest і в усіх контекстах розширення.
+  function getUILanguage(): string;
+}
+
 declare namespace chrome.identity {
   // Повертає https://<extension-id>.chromiumapp.org/<path> — цей URL реєструється
   // як Authorized redirect URI в Google Cloud Console OAuth-клієнті.

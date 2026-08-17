@@ -379,21 +379,25 @@
     </div>
     <div>
       <div class="pp-title">Subtitle Translator</div>
-      <div class="pp-sub">AI-переклад субтитрів</div>
+      <div class="pp-sub" data-i18n="popupSubtitle">AI-переклад субтитрів</div>
     </div>
   </div>
 
+  <!-- Тексти лишаються в розмітці як українські: атрибут data-i18n лише
+       перекриває їх на старті (applyStaticI18n у popup.js). Так HTML читається
+       без запуску коду — це важливо і для рецензента Web Store, і для того,
+       щоб при поламаному JS вікно не було порожнім. -->
   <div class="pp-tabs">
-    <button type="button" class="pp-tab active" data-tab="profile">Профіль</button>
-    <button type="button" class="pp-tab" data-tab="words">Слова</button>
-    <button type="button" class="pp-tab" data-tab="settings">Налаштування</button>
+    <button type="button" class="pp-tab active" data-tab="profile" data-i18n="tabProfile">Профіль</button>
+    <button type="button" class="pp-tab" data-tab="words" data-i18n="tabWords">Слова</button>
+    <button type="button" class="pp-tab" data-tab="settings" data-i18n="tabSettings">Налаштування</button>
   </div>
 
   <!-- Профіль -->
   <section class="pp-panel" data-panel="profile">
     <div id="profileLoggedOut" class="pp-empty">
-      <p>Увійдіть, щоб синхронізувати слова й налаштування між пристроями.</p>
-      <button type="button" id="profileLoginBtn" class="pp-btn-primary">Увійти через Google</button>
+      <p data-i18n="profileLoginPrompt">Увійдіть, щоб синхронізувати слова й налаштування між пристроями.</p>
+      <button type="button" id="profileLoginBtn" class="pp-btn-primary" data-i18n="accountLoginBtn">Увійти через Google</button>
     </div>
     <div id="profileLoggedIn" hidden>
       <div class="pp-profile">
@@ -406,30 +410,30 @@
       <div class="pp-stats">
         <div class="pp-stat">
           <div class="pp-stat-value" id="statTotal">0</div>
-          <div class="pp-stat-label">Слів</div>
+          <div class="pp-stat-label" data-i18n="statWordsLabel">Слів</div>
         </div>
         <div class="pp-stat">
           <div class="pp-stat-value" id="statWeek">0</div>
-          <div class="pp-stat-label">За тиждень</div>
+          <div class="pp-stat-label" data-i18n="statWeekLabel">За тиждень</div>
         </div>
         <div class="pp-stat">
           <div class="pp-stat-value" id="statPairs">0</div>
-          <div class="pp-stat-label">Мовних пар</div>
+          <div class="pp-stat-label" data-i18n="statPairsLabel">Мовних пар</div>
         </div>
       </div>
       <div class="pp-quota" id="quotaRow" hidden></div>
       <div class="pp-profile-since" id="profileSince"></div>
-      <button type="button" id="openDashboard" class="pp-btn-primary">Статистика та історія</button>
-      <button type="button" id="logoutBtn" class="pp-btn-ghost">Вийти</button>
+      <button type="button" id="openDashboard" class="pp-btn-primary" data-i18n="openDashboard">Статистика та історія</button>
+      <button type="button" id="logoutBtn" class="pp-btn-ghost" data-i18n="accountLogoutBtn">Вийти</button>
     </div>
   </section>
 
   <!-- Слова -->
   <section class="pp-panel" data-panel="words" hidden>
-    <div id="wordsLoggedOut" class="pp-empty">Увійдіть, щоб бачити збережені слова.</div>
+    <div id="wordsLoggedOut" class="pp-empty" data-i18n="wordsLoginPrompt">Увійдіть, щоб бачити збережені слова.</div>
     <div id="wordsLoggedIn" hidden>
       <div class="pp-words-head">
-        <input type="text" id="wordSearch" class="pp-search" placeholder="Пошук слова…">
+        <input type="text" id="wordSearch" class="pp-search" placeholder="Пошук слова…" data-i18n-placeholder="wordSearchPlaceholder">
         <span class="pp-words-count" id="wordsCount"></span>
       </div>
       <div id="wordsList" class="pp-words"></div>
@@ -438,17 +442,18 @@
 
   <!-- Налаштування -->
   <section class="pp-panel" data-panel="settings" hidden>
-    <label>Ключ Gemini</label>
+    <label data-i18n="labelGeminiKey">Ключ Gemini</label>
     <div class="pp-seg" id="keySource">
-      <button type="button" class="pp-seg-btn active" data-key-source="own">Свій ключ</button>
-      <button type="button" class="pp-seg-btn" data-key-source="proxy">Вбудований</button>
+      <button type="button" class="pp-seg-btn active" data-key-source="own" data-i18n="keySourceOwn">Свій ключ</button>
+      <button type="button" class="pp-seg-btn" data-key-source="proxy" data-i18n="keySourceProxy">Вбудований</button>
     </div>
 
     <div id="ownKeyBlock">
       <label for="apiKey">API Key</label>
       <input type="password" id="apiKey" placeholder="AIza...">
       <div class="hint">
-        Отримати безкоштовно: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com</a>
+        <span data-i18n="getKeyFree">Отримати безкоштовно:</span>
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com</a>
       </div>
     </div>
 
@@ -456,16 +461,21 @@
       <div class="hint" id="proxyHint">Переклад іде через сервер — власний ключ не потрібен.</div>
     </div>
 
-    <label>Мова субтитрів</label>
+    <label data-i18n="labelSourceLang">Мова субтитрів</label>
     <div id="sourceLangDd"></div>
 
-    <label>Перекладати на</label>
+    <label data-i18n="labelTargetLang">Перекладати на</label>
     <div id="targetLangDd"></div>
 
-    <label>Модель Gemini</label>
+    <label data-i18n="labelModel">Модель Gemini</label>
     <div id="modelDd"></div>
 
-    <button type="button" id="save" class="pp-btn-primary">Зберегти</button>
+    <!-- Мова інтерфейсу останньою у блоці: її змінюють раз і назавжди, тоді як
+         мовну пару й модель — регулярно, тож вони мають бути вище. -->
+    <label data-i18n="labelUiLang">Мова інтерфейсу</label>
+    <div id="uiLangDd"></div>
+
+    <button type="button" id="save" class="pp-btn-primary" data-i18n="btnSave">Зберегти</button>
     <div id="status"></div>
   </section>
 

@@ -1,5 +1,6 @@
 import { renderChart } from '../shared/chart';
 import { getAuthStatus, isAuthError } from '../api/authClient';
+import { initI18n, applyStaticI18n, onLangChange, t, localeTag } from '../shared/i18n';
 import { MSG, STORAGE } from '../shared/messages';
 
 const $ = (id) => document.getElementById(id);
@@ -36,6 +37,11 @@ let sessionTotal = 0;
 init();
 
 async function init() {
+  // Мова — до першого рендера: інакше підписи спершу блимнули б українською.
+  await initI18n();
+  applyStaticI18n(document);
+  onLangChange(renderI18n);
+
   const status = await getAuthStatus();
   const loggedIn = !isAuthError(status) && status.loggedIn;
 
@@ -46,6 +52,18 @@ async function init() {
   if (!isAuthError(status) && status.email) els.headerSub.textContent = status.email;
 
   await Promise.all([loadStats(), loadHistory(), loadReview(), loadFrequent()]);
+}
+
+// Перемалювання після зміни мови (її могли перемкнути в popup, поки ця
+// вкладка відкрита). Чергу повторень свідомо НЕ перезапитуємо: loadReview()
+// зібрав би її заново, і сесія почалася б з початку. Перемальовуємо лише
+// поточну картку — вона й так будується з уже завантажених даних.
+function renderI18n() {
+  applyStaticI18n(document);
+  if (stats.length) drawChart();
+  loadHistory();
+  renderCard();
+  loadFrequent();
 }
 
 // ── Фільтри ──────────────────────────────────────────────────────────────────
@@ -107,8 +125,8 @@ function longestStreak() {
 
 function drawChart() {
   const all = [
-    { key: 'translations', label: 'Переклади', color: COLORS.translations, values: stats.map((p) => p.translations) },
-    { key: 'words', label: 'Збережені слова', color: COLORS.words, values: stats.map((p) => p.savedWords) }
+    { key: 'translations', label: t('seriesTranslations'), color: COLORS.translations, values: stats.map((p) => p.translations) },
+    { key: 'words', label: t('seriesWordsFull'), color: COLORS.words, values: stats.map((p) => p.savedWords) }
   ];
   const shown = series === 'both' ? all : all.filter((s) => s.key === series);
 
@@ -145,7 +163,7 @@ els.nextPage.addEventListener('click', () => { if (page + 1 < totalPages) { page
 async function loadHistory() {
   const r = await send({ type: MSG.historyList, query: els.historySearch.value.trim(), page });
   if (!r || r.error || !r.history) {
-    renderEmpty('Не вдалося завантажити історію');
+    renderEmpty(t('historyLoadFailed'));
     return;
   }
 
@@ -154,8 +172,8 @@ async function loadHistory() {
 
   if (items.length === 0) {
     renderEmpty(els.historySearch.value.trim()
-      ? 'Нічого не знайдено'
-      : 'Історія порожня — перекладіть слово у відео, і воно з’явиться тут');
+      ? t('nothingFound')
+      : t('historyEmpty'));
     return;
   }
 
@@ -163,7 +181,9 @@ async function loadHistory() {
   items.forEach((item) => els.historyList.appendChild(historyRow(item)));
 
   els.pager.hidden = totalPages <= 1;
-  els.pageInfo.textContent = `Сторінка ${page + 1} з ${totalPages} · ${totalItems} записів`;
+  // Номери сторінок — рядками навмисно: форму множини для «записів» задає
+  // перший аргумент-число, а ним має бути totalItems, не номер сторінки.
+  els.pageInfo.textContent = t('pageInfo', String(page + 1), String(totalPages), totalItems);
   els.prevPage.disabled = page === 0;
   els.nextPage.disabled = page + 1 >= totalPages;
 }
@@ -222,7 +242,7 @@ function historyRow(item) {
     link.href = item.sourceUrl;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.textContent = 'До відео';
+    link.textContent = t('toVideo');
     meta.appendChild(link);
   }
 
@@ -231,15 +251,15 @@ function historyRow(item) {
 }
 
 function modeLabel(mode) {
-  if (mode === 'word') return 'слово';
-  if (mode === 'phrase') return 'фраза';
-  if (mode === 'sentence') return 'речення';
+  if (mode === 'word') return t('modeWord');
+  if (mode === 'phrase') return t('modePhrase');
+  if (mode === 'sentence') return t('modeSentence');
   return mode;
 }
 
 function formatDateTime(iso) {
   try {
-    return new Date(iso).toLocaleString('uk-UA',
+    return new Date(iso).toLocaleString(localeTag(),
       { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch {
     return '';
@@ -250,7 +270,7 @@ function formatDateTime(iso) {
 async function loadReview() {
   const r = await send({ type: MSG.reviewDue, limit: 20 });
   if (!r || r.error || !Array.isArray(r.cards)) {
-    renderReviewMessage('Не вдалося завантажити картки');
+    renderReviewMessage(t('reviewLoadFailed'));
     return;
   }
 
@@ -272,13 +292,13 @@ function renderReviewMessage(text) {
 function renderCard() {
   if (queueIndex >= queue.length) {
     renderReviewMessage(sessionTotal > 0
-      ? `Готово — повторено ${sessionTotal} ${plural(sessionTotal, 'слово', 'слова', 'слів')}. Повертайся завтра.`
-      : 'Немає слів до повторення. Збережи кілька слів у відео — вони з’являться тут.');
+      ? t('reviewDone', sessionTotal)
+      : t('reviewEmpty'));
     return;
   }
 
   const card = queue[queueIndex];
-  els.reviewProgress.textContent = `${queueIndex + 1} з ${sessionTotal}`;
+  els.reviewProgress.textContent = t('reviewProgress', String(queueIndex + 1), String(sessionTotal));
   els.reviewBody.textContent = '';
 
   const wrap = document.createElement('div');
@@ -305,7 +325,7 @@ function renderCard() {
   const reveal = document.createElement('button');
   reveal.className = 'btn-primary';
   reveal.style.marginTop = '24px';
-  reveal.textContent = 'Показати переклад';
+  reveal.textContent = t('showTranslation');
   reveal.addEventListener('click', () => revealAnswer(card, wrap, reveal));
   wrap.appendChild(reveal);
 
@@ -356,7 +376,7 @@ function revealAnswer(card, wrap, revealBtn) {
     link.href = card.sourceUrl;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.textContent = 'Де я це зустрів →';
+    link.textContent = t('whereIMetIt');
     answer.appendChild(link);
   }
 
@@ -365,10 +385,10 @@ function revealAnswer(card, wrap, revealBtn) {
   const grades = document.createElement('div');
   grades.className = 'grades';
   [
-    { grade: 'again', label: 'Не згадав', hint: 'знову сьогодні', cls: 'grade-again' },
-    { grade: 'hard', label: 'Важко', hint: 'скоро', cls: '' },
-    { grade: 'good', label: 'Згадав', hint: 'за планом', cls: '' },
-    { grade: 'easy', label: 'Легко', hint: 'нескоро', cls: 'grade-easy' }
+    { grade: 'again', label: t('gradeAgain'), hint: t('gradeAgainHint'), cls: 'grade-again' },
+    { grade: 'hard', label: t('gradeHard'), hint: t('gradeHardHint'), cls: '' },
+    { grade: 'good', label: t('gradeGood'), hint: t('gradeGoodHint'), cls: '' },
+    { grade: 'easy', label: t('gradeEasy'), hint: t('gradeEasyHint'), cls: 'grade-easy' }
   ].forEach((g) => {
     const btn = document.createElement('button');
     btn.className = `grade ${g.cls}`;
@@ -389,21 +409,13 @@ async function submitGrade(card, grade, gradesEl) {
 
   const r = await send({ type: MSG.reviewGrade, id: card.id, grade });
   if (!r || r.error) {
-    renderReviewMessage('Не вдалося зберегти оцінку — спробуй оновити сторінку');
+    renderReviewMessage(t('gradeSaveFailed'));
     return;
   }
 
   queueIndex += 1;
   renderCard();
   loadStats(); // повторення — теж активність
-}
-
-function plural(n, one, few, many) {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-  return many;
 }
 
 // ── Часті пошуки ─────────────────────────────────────────────────────────────
@@ -442,10 +454,10 @@ function frequentRow(item) {
 
   const save = document.createElement('button');
   save.className = 'freq-save';
-  save.textContent = 'Зберегти';
+  save.textContent = t('freqSave');
   save.addEventListener('click', async () => {
     save.disabled = true;
-    save.textContent = 'Зберігаю…';
+    save.textContent = t('freqSaving');
     const r = await send({
       type: MSG.saveWord,
       word: item.text,
@@ -456,12 +468,12 @@ function frequentRow(item) {
       sourceUrl: item.sourceUrl
     });
     if (r?.error) {
-      save.textContent = 'Не вдалось';
+      save.textContent = t('freqFailed');
       save.title = r.error;
       save.disabled = false;
       return;
     }
-    save.textContent = '✓ Збережено';
+    save.textContent = t('saveWordDone');
     // Рядок лишається на місці: зникнення під курсором збиває з пантелику.
     // З наступним відкриттям сторінки бекенд його вже відфільтрує.
   });
