@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<!--
+  Політика приватності для Chrome Web Store.
+
+  Лежить у static/, тобто віддається самим Spring Boot за адресою
+  https://<домен>/privacy.html — без окремого хостингу і без додаткових витрат.
+  Доступ без токена відкритий явно у SecurityConfig (requestMatchers("/privacy.html")).
+
+  Двомовна: українська для користувачів, англійська для рецензентів Web Store.
+  Тексти мусять збігатися з чекбоксами "Data usage" у дашборді — розбіжність між
+  ними є окремою підставою для відмови.
+-->
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subtitle Translator — Політика приватності / Privacy Policy</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    max-width: 46rem; margin: 0 auto; padding: 2rem 1.25rem 4rem;
+    font: 16px/1.65 -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { font-size: 1.6rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.2rem; margin-top: 2.25rem; }
+  h3 { font-size: 1rem; margin-top: 1.5rem; }
+  .meta { opacity: .7; font-size: .9rem; margin-top: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .95rem; }
+  th, td { border: 1px solid rgba(128,128,128,.4); padding: .5rem .6rem; text-align: left; vertical-align: top; }
+  th { font-weight: 600; }
+  hr { margin: 3.5rem 0; border: 0; border-top: 1px solid rgba(128,128,128,.35); }
+  code { font-size: .9em; }
+</style>
+</head>
+<body>
+
+<h1>Subtitle Translator — Політика приватності</h1>
+<p class="meta">Остання редакція: 17 серпня 2026 року</p>
+
+<p>Subtitle Translator — розширення Chrome, яке робить субтитри YouTube інтерактивними:
+клік по слову дає переклад на місці, а слово можна зберегти у власний словник для повторення.
+Ця сторінка описує, які саме дані розширення обробляє, чому і кому їх передає.</p>
+
+<h2>1. Які дані обробляються</h2>
+
+<table>
+  <tr><th>Дані</th><th>Для чого</th><th>Де зберігаються</th></tr>
+  <tr>
+    <td>Текст субтитрів, який ви виділили, і сусідній рядок як контекст</td>
+    <td>Власне переклад. Без контексту переклад окремого слова часто хибний</td>
+    <td>Надсилається до Gemini API; результат кешується у вашому браузері, а при
+        перекладі вбудованим ключем — ще й на нашому сервері</td>
+  </tr>
+  <tr>
+    <td>Кеш перекладів на сервері: текст, контекст, мовна пара і готовий переклад</td>
+    <td>Щоб та сама репліка не оплачувалась двічі. Кеш спільний для всіх користувачів
+        і не містить посилання на того, хто перекладав</td>
+    <td>Наш сервер. Використовується лише при перекладі вбудованим ключем</td>
+  </tr>
+  <tr>
+    <td>Електронна пошта та ім'я з вашого Google-акаунта</td>
+    <td>Впізнати вас при вході, щоб словник і налаштування були доступні на всіх ваших пристроях</td>
+    <td>Наш сервер</td>
+  </tr>
+  <tr>
+    <td>Збережені слова: слово, переклад, приклад, мовна пара, контекст</td>
+    <td>Особистий словник і планувальник повторень</td>
+    <td>Наш сервер (у гостьовому режимі — лише локально)</td>
+  </tr>
+  <tr>
+    <td>Історія звернень: що перекладали, коли, і посилання на відео</td>
+    <td>Пошук по історії, статистика занять, блок «часті звернення». Посилання дозволяє повернутися до моменту у відео</td>
+    <td>Наш сервер</td>
+  </tr>
+  <tr>
+    <td>Ваш власний ключ Gemini API, якщо ви його вводите</td>
+    <td>Переклад вашим ключем замість вбудованого</td>
+    <td>Наш сервер, у зашифрованому вигляді (AES-256-GCM), і локально у браузері</td>
+  </tr>
+  <tr>
+    <td>Налаштування: мовна пара, модель, джерело ключа</td>
+    <td>Щоб не вводити їх щоразу заново</td>
+    <td>Локально та на нашому сервері</td>
+  </tr>
+</table>
+
+<p><strong>Чого розширення не робить:</strong> не читає вміст сторінок поза YouTube, не збирає
+історію вашого браузера, не відслідковує вас між сайтами, не показує рекламу, не має аналітики
+й трекерів, не звертається до інших сервісів Google від вашого імені.</p>
+
+<h2>2. Кому дані передаються</h2>
+
+<ul>
+  <li><strong>Google (Gemini API)</strong> — отримує виділений текст субтитрів і контекст,
+      щоб зробити переклад. Більше нічого: ні вашої пошти, ні словника.</li>
+  <li><strong>Google (вхід через акаунт)</strong> — підтверджує, що ви це ви.
+      Розширення запитує лише обсяг <code>openid email profile</code>.</li>
+  <li><strong>Railway</strong> — хостинг нашого сервера, дата-центр у Амстердамі (Нідерланди).</li>
+  <li><strong>Neon</strong> — керована база даних зі словником і налаштуваннями,
+      дата-центр у Лондоні (Велика Британія).</li>
+</ul>
+
+<h3>Важливо про переклад вбудованим ключем</h3>
+
+<p>Вбудований ключ працює на безкоштовному тарифі Gemini API. За умовами Google на цьому
+тарифі надіслані запити й відповіді <strong>можуть використовуватись Google для покращення
+його продуктів і моделей, а також переглядатись людьми</strong>. Тобто текст субтитрів, який
+ви виділяєте в режимі вбудованого ключа, потрапляє до Google не лише для разового перекладу.</p>
+
+<p>Якщо це для вас неприйнятно — перемкніться в налаштуваннях на власний ключ Gemini.
+Тоді запит іде з вашого браузера напряму до Google під вашим ключем і за вашим тарифом,
+а наш сервер його не бачить узагалі.</p>
+
+<h3>Де зберігаються дані</h3>
+
+<p>Сервер розміщено в Нідерландах, база даних — у Великій Британії. Обидві країни визнані
+Європейською Комісією такими, що забезпечують належний рівень захисту даних, тож окремих
+гарантій для передачі з ЄС не потрібно.</p>
+
+<p>Railway і Neon — компанії зі США; доступ їхньої підтримки до інфраструктури врегульовано
+стандартними договірними положеннями ЄС у договорах про обробку даних з ними. Google обробляє
+запити на переклад у своїй глобальній інфраструктурі на тих самих підставах.</p>
+
+<p>Дані не продаються, не передаються рекламним мережам, не використовуються для оцінки
+кредитоспроможності й не застосовуються ні для чого, крім описаного вище призначення.</p>
+
+<h2>3. Захист</h2>
+
+<ul>
+  <li>Увесь обмін із сервером — лише через HTTPS.</li>
+  <li>Ваш ключ Gemini шифрується перед записом у базу (AES-256-GCM), тобто у самій базі
+      він лежить не відкритим текстом.</li>
+  <li>Сесія тримається на короткоживучих токенах; вони зберігаються у сховищі розширення
+      і ніколи не потрапляють у контекст веб-сторінки.</li>
+</ul>
+
+<h2>4. Скільки дані зберігаються і як їх видалити</h2>
+
+<p>Словник, історія й налаштування зберігаються, доки ви їх не видалите. Окреме збережене
+слово видаляється прямо в розширенні. Історія перекладів видаляється автоматично через
+90 днів. Щоб видалити акаунт разом з усіма даними, напишіть на адресу з розділу 7 —
+видалимо не пізніше ніж за місяць і підтвердимо це листом. Локальний кеш перекладів
+очищується видаленням розширення.</p>
+
+<p>Серверний кеш перекладів зберігається безстроково, бо він не прив'язаний до
+користувача: після видалення акаунта в ньому лишається лише текст і його переклад,
+без будь-якої вказівки на те, хто його запитував.</p>
+
+<h2>5. Діти</h2>
+
+<p>Розширення не адресоване дітям молодшим за 13 років і не збирає їхні дані свідомо.</p>
+
+<h2>6. Зміни політики</h2>
+
+<p>Якщо спосіб обробки даних зміниться, ми оновимо цю сторінку й покажемо повідомлення
+в самому розширенні до того, як зміна набуде чинності — щоб рішення залишалося за вами.</p>
+
+<h2>7. Контакт</h2>
+
+<p>Питання щодо приватності або запит на видалення даних: <strong>nikum366@gmail.com</strong></p>
+
+<p>Умови користування сервісом — окремим документом: <a href="/terms.html">terms.html</a>.</p>
+
+<hr>
+
+<h1 lang="en">Subtitle Translator — Privacy Policy</h1>
+<p class="meta" lang="en">Last updated: 17 August 2026</p>
+
+<div lang="en">
+
+<p>Subtitle Translator is a Chrome extension that makes YouTube subtitles interactive: clicking a
+word returns an inline translation, and the word can be saved to a personal review deck. This page
+describes exactly what data the extension handles, why, and with whom it is shared.</p>
+
+<h2>1. Data we handle</h2>
+
+<table>
+  <tr><th>Data</th><th>Purpose</th><th>Where it is stored</th></tr>
+  <tr>
+    <td>The subtitle text you select, plus the surrounding line as context</td>
+    <td>Producing the translation. Without context, single-word translations are frequently wrong</td>
+    <td>Sent to the Gemini API; the result is cached in your browser, and — when the built-in
+        key is used — on our server as well</td>
+  </tr>
+  <tr>
+    <td>Server-side translation cache: text, context, language pair and the finished translation</td>
+    <td>So the same subtitle line is not paid for twice. The cache is shared across users and
+        holds no link to whoever requested the translation</td>
+    <td>Our server. Used only for translations made with the built-in key</td>
+  </tr>
+  <tr>
+    <td>Email address and display name from your Google account</td>
+    <td>Identifying you at sign-in so your deck and settings follow you across your devices</td>
+    <td>Our server</td>
+  </tr>
+  <tr>
+    <td>Saved words: term, translation, example, language pair, context</td>
+    <td>Your personal deck and its spaced-repetition schedule</td>
+    <td>Our server (guest mode: local only)</td>
+  </tr>
+  <tr>
+    <td>Lookup history: what was translated, when, and the video URL</td>
+    <td>History search, study statistics, and the "frequent lookups" list. The URL lets you return to that point in the video</td>
+    <td>Our server</td>
+  </tr>
+  <tr>
+    <td>Your own Gemini API key, if you provide one</td>
+    <td>Translating with your key instead of the built-in one</td>
+    <td>Our server, encrypted (AES-256-GCM), and locally in your browser</td>
+  </tr>
+  <tr>
+    <td>Settings: language pair, model, key source</td>
+    <td>So you do not re-enter them every session</td>
+    <td>Locally and on our server</td>
+  </tr>
+</table>
+
+<p><strong>What the extension does not do:</strong> it does not read page content outside YouTube,
+does not collect your browsing history, does not track you across sites, shows no ads, contains no
+analytics or tracking code, and never calls other Google services on your behalf.</p>
+
+<h2>2. Who receives the data</h2>
+
+<ul>
+  <li><strong>Google (Gemini API)</strong> — receives the selected subtitle text and its context in
+      order to translate it. Nothing else: not your email, not your deck.</li>
+  <li><strong>Google (account sign-in)</strong> — verifies your identity. The extension requests
+      only the <code>openid email profile</code> scopes.</li>
+  <li><strong>Railway</strong> — hosting for our server, data centre in Amsterdam (Netherlands).</li>
+  <li><strong>Neon</strong> — managed database holding the deck and settings, data centre in
+      London (United Kingdom).</li>
+</ul>
+
+<h3>Important: translation with the built-in key</h3>
+
+<p>The built-in key runs on the free tier of the Gemini API. Under Google's terms for that tier,
+the requests and responses sent <strong>may be used by Google to improve its products and models,
+and may be reviewed by humans</strong>. In other words, subtitle text you select while using the
+built-in key reaches Google for more than a one-off translation.</p>
+
+<p>If that is not acceptable to you, switch to your own Gemini key in the settings. The request then
+goes straight from your browser to Google under your key and your billing terms, and our server
+never sees it.</p>
+
+<h3>Where the data is stored</h3>
+
+<p>The server is in the Netherlands and the database is in the United Kingdom. The European
+Commission recognises both as providing an adequate level of data protection, so no additional
+safeguards are required for transfers from the EU.</p>
+
+<p>Railway and Neon are US companies; access by their support staff to the infrastructure is
+governed by EU standard contractual clauses in our data processing agreements with them. Google
+processes translation requests across its global infrastructure on the same basis.</p>
+
+<p>Data is never sold, never shared with advertising networks, never used to assess creditworthiness,
+and never used for anything beyond the single purpose described above.</p>
+
+<h2>3. Security</h2>
+
+<ul>
+  <li>All traffic to our server uses HTTPS only.</li>
+  <li>Your Gemini key is encrypted before it is written to the database (AES-256-GCM), so it is not
+      stored in plaintext.</li>
+  <li>Sessions use short-lived tokens kept in extension storage; they are never exposed to the
+      context of any web page.</li>
+</ul>
+
+<h2>4. Retention and deletion</h2>
+
+<p>Your deck, history, and settings are kept until you delete them. Individual saved words can be
+deleted inside the extension. Lookup history is deleted automatically after 90 days. To delete your
+account and all associated data, write to the address in section 7 — we delete within one month at
+the latest and confirm by email. The local translation cache is removed by uninstalling the extension.</p>
+
+<p>The server-side translation cache is kept indefinitely because it is not tied to any user: once an
+account is deleted, all that remains there is a piece of text and its translation, with nothing
+indicating who requested it.</p>
+
+<h2>5. Children</h2>
+
+<p>The extension is not directed to children under 13 and does not knowingly collect their data.</p>
+
+<h2>6. Changes to this policy</h2>
+
+<p>If our data handling changes, we will update this page and show a notice inside the extension
+before the change takes effect, so the decision stays with you.</p>
+
+<h2>7. Contact</h2>
+
+<p>Privacy questions or data deletion requests: <strong>nikum366@gmail.com</strong></p>
+
+<p>The terms of use are a separate document: <a href="/terms.html">terms.html</a>.</p>
+
+</div>
+
+</body>
+</html>

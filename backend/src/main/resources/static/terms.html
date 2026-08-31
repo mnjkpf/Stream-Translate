@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<!--
+  Умови користування. Лежить поруч із privacy.html і віддається так само —
+  https://<домен>/terms.html, доступ без токена відкритий у SecurityConfig.
+
+  Право польське (резидентство розробника). Розділ про відповідальність свідомо
+  НЕ намагається виключити її повністю: щодо споживача такі положення в ЄС просто
+  недійсні, а неохайне формулювання ще й є самостійним порушенням (недозволені
+  договірні положення). Тому обмеження подане з прямим застереженням про
+  імперативні норми — так воно принаймні працює в тій частині, де дозволено.
+
+  ЩО ТРЕБА ЗАПОВНИТИ ПЕРЕД ПУБЛІКАЦІЄЮ: {{ІМ'Я}} — ім'я та прізвище (або назва
+  ФОП/spółki), яке відповідає за сервіс. Без цього документ юридично неповний:
+  і споживче право ЄС, і Chrome Web Store вимагають, щоб постачальника можна
+  було ідентифікувати.
+-->
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subtitle Translator — Умови користування / Terms of Use</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    max-width: 46rem; margin: 0 auto; padding: 2rem 1.25rem 4rem;
+    font: 16px/1.65 -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { font-size: 1.6rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.15rem; margin-top: 2.25rem; }
+  .meta { opacity: .7; font-size: .9rem; margin-top: 0; }
+  hr { margin: 3.5rem 0; border: 0; border-top: 1px solid rgba(128,128,128,.35); }
+  .fill { background: rgba(255,196,0,.22); padding: 0 .2em; }
+</style>
+</head>
+<body>
+
+<h1>Subtitle Translator — Умови користування</h1>
+<p class="meta">Чинні з 17 серпня 2026 року</p>
+
+<p>Ці умови регулюють користування розширенням Chrome «Subtitle Translator» і пов'язаним
+із ним сервером. Встановлюючи розширення, ви погоджуєтесь із ними. Якщо ви з чимось із
+написаного не згодні — не користуйтесь розширенням.</p>
+
+<h2>1. Хто надає сервіс</h2>
+
+<p>Сервіс надає <span class="fill">{{ІМ'Я}}</span>, фізична особа, яка діє як незалежний
+розробник. Зв'язок: <strong>nikum366@gmail.com</strong>. Це ж адреса для будь-яких питань,
+скарг і запитів щодо даних.</p>
+
+<h2>2. Що це за сервіс</h2>
+
+<p>Розширення робить субтитри YouTube інтерактивними: клік по слову дає переклад,
+слово можна зберегти у власний словник і повторювати за інтервалами. Переклад виконує
+модель Google Gemini.</p>
+
+<p>Сервіс безкоштовний. Ми не беремо плати ні за встановлення, ні за користування.</p>
+
+<h2>3. Акаунт</h2>
+
+<p>Розширенням можна користуватись без акаунта — тоді словник лишається лише на цьому
+комп'ютері. Вхід через Google потрібен для синхронізації між пристроями та для перекладу
+вбудованим ключем.</p>
+
+<p>Ви відповідаєте за доступ до свого акаунта Google. Видалити свій акаунт у сервісі разом
+з усіма даними можна будь-коли — див. політику приватності.</p>
+
+<h2>4. Ключі перекладу</h2>
+
+<p>Є два режими.</p>
+
+<p><strong>Власний ключ Gemini.</strong> Ви отримуєте його в Google, і ваші стосунки з
+Google щодо цього ключа — окремі від наших. Ви самі відповідаєте за його збереження,
+за умови Google і за будь-яку плату, яку Google може стягнути.</p>
+
+<p><strong>Вбудований ключ.</strong> Ми надаємо його з денним лімітом на користувача і
+спільним денним лімітом на весь сервіс. Ліміти можуть змінюватися, а сам режим —
+бути обмеженим або вимкненим у будь-який момент і без попередження, зокрема через
+вартість чи зловживання. Переклад власним ключем від цього не залежить.</p>
+
+<h2>5. Як користуватись не можна</h2>
+
+<ul>
+  <li>Автоматизовано звертатись до сервісу поза інтерфейсом розширення.</li>
+  <li>Обходити ліміти, зокрема створенням кількох акаунтів заради квоти.</li>
+  <li>Намагатися отримати доступ до чужих даних або порушити роботу сервісу.</li>
+  <li>Використовувати сервіс для дій, які порушують закон або умови YouTube чи Google.</li>
+</ul>
+
+<p>При порушенні ми можемо обмежити або припинити доступ.</p>
+
+<h2>6. Якість перекладу</h2>
+
+<p>Переклад робить мовна модель. Вона помиляється: неправильно тлумачить контекст,
+плутає значення багатозначних слів, вигадує приклади. Розширення — навчальний
+інструмент, а не професійний переклад. Не покладайтесь на нього там, де ціна помилки
+висока: у медичних, юридичних, фінансових чи будь-яких інших відповідальних питаннях.</p>
+
+<h2>7. Доступність</h2>
+
+<p>Сервіс надається «як є» і «як доступний». Ми не гарантуємо безперебійної роботи,
+відсутності помилок, збереження даних назавжди чи сумісності з майбутніми версіями
+Chrome і YouTube. Робота залежить від сторонніх сервісів (Google, YouTube, хостинг),
+на які ми не впливаємо.</p>
+
+<p>Ми можемо змінювати, призупиняти або припинити сервіс. Якщо припинення буде плановим,
+попередимо в самому розширенні завчасно, щоб ви встигли забрати свій словник.</p>
+
+<h2>8. Відповідальність</h2>
+
+<p>У межах, дозволених законом, ми не відповідаємо за непрямі збитки, втрачену вигоду
+чи втрату даних, що виникли з користування сервісом.</p>
+
+<p>Це обмеження <strong>не стосується</strong> шкоди, завданої умисно або внаслідок
+грубої недбалості, шкоди життю та здоров'ю, а також будь-якої відповідальності, яку за
+законом виключити не можна. Якщо ви споживач, ці умови не обмежують і не скасовують
+ваших прав за імперативними нормами права вашої країни проживання.</p>
+
+<h2>9. Зміни умов</h2>
+
+<p>Ми можемо змінювати ці умови. Про суттєві зміни повідомимо в самому розширенні до
+того, як вони наберуть чинності. Продовження користування після цього означає згоду.
+Якщо зміни вас не влаштовують — видаліть розширення й акаунт.</p>
+
+<h2>10. Право і спори</h2>
+
+<p>До цих умов застосовується право Республіки Польща.</p>
+
+<p>Якщо ви споживач, це не позбавляє вас захисту імперативних норм країни вашого
+проживання, і ви можете звертатися до суду за місцем свого проживання. Спори зі
+споживачами з ЄС також можна намагатися вирішити позасудово.</p>
+
+<h2>11. Приватність</h2>
+
+<p>Як ми поводимось із даними, описано окремо: <a href="/privacy.html">політика приватності</a>.
+Вона є невід'ємною частиною цих умов.</p>
+
+<hr>
+
+<h1 lang="en">Subtitle Translator — Terms of Use</h1>
+<p class="meta" lang="en">Effective 17 August 2026</p>
+
+<div lang="en">
+
+<p>These terms govern the use of the "Subtitle Translator" Chrome extension and its
+accompanying server. By installing the extension you agree to them. If you disagree with
+any part, do not use the extension.</p>
+
+<h2>1. Who provides the service</h2>
+
+<p>The service is provided by <span class="fill">{{ІМ'Я}}</span>, a private individual acting
+as an independent developer. Contact: <strong>nikum366@gmail.com</strong> — the same address
+for questions, complaints, and data requests.</p>
+
+<h2>2. What the service is</h2>
+
+<p>The extension makes YouTube subtitles interactive: clicking a word returns a translation,
+and the word can be saved to a personal deck and reviewed on a spaced schedule. Translation is
+performed by Google's Gemini model.</p>
+
+<p>The service is free of charge. We charge nothing for installation or use.</p>
+
+<h2>3. Account</h2>
+
+<p>The extension works without an account, in which case your deck stays on that computer only.
+Signing in with Google is needed for syncing across devices and for the built-in translation key.</p>
+
+<p>You are responsible for access to your Google account. You may delete your account and all
+associated data at any time — see the privacy policy.</p>
+
+<h2>4. Translation keys</h2>
+
+<p>There are two modes.</p>
+
+<p><strong>Your own Gemini key.</strong> You obtain it from Google, and your relationship with
+Google regarding that key is separate from ours. You are responsible for keeping it safe, for
+Google's terms, and for any charges Google may apply.</p>
+
+<p><strong>The built-in key.</strong> We provide it with a daily per-user limit and a shared
+daily limit for the whole service. The limits may change, and the mode itself may be restricted
+or switched off at any time without notice, in particular because of cost or abuse. Translation
+with your own key is unaffected.</p>
+
+<h2>5. Unacceptable use</h2>
+
+<ul>
+  <li>Accessing the service programmatically outside the extension's interface.</li>
+  <li>Circumventing limits, including creating multiple accounts for extra quota.</li>
+  <li>Attempting to reach other people's data or to disrupt the service.</li>
+  <li>Using the service for anything unlawful or contrary to YouTube's or Google's terms.</li>
+</ul>
+
+<p>We may restrict or terminate access in case of violation.</p>
+
+<h2>6. Translation quality</h2>
+
+<p>Translation is produced by a language model. It makes mistakes: it misreads context, confuses
+senses of ambiguous words, and invents examples. The extension is a learning aid, not professional
+translation. Do not rely on it where the cost of an error is high — medical, legal, financial or
+any other consequential matters.</p>
+
+<h2>7. Availability</h2>
+
+<p>The service is provided "as is" and "as available". We do not warrant uninterrupted operation,
+freedom from errors, indefinite retention of data, or compatibility with future versions of Chrome
+and YouTube. Operation depends on third-party services (Google, YouTube, hosting) outside our control.</p>
+
+<p>We may modify, suspend, or discontinue the service. If a shutdown is planned, we will give notice
+inside the extension in advance so you can export your deck.</p>
+
+<h2>8. Liability</h2>
+
+<p>To the extent permitted by law, we are not liable for indirect damages, lost profits, or loss of
+data arising from use of the service.</p>
+
+<p>This limitation <strong>does not apply</strong> to damage caused intentionally or by gross
+negligence, to injury to life or health, or to any liability that cannot be excluded by law. If you
+are a consumer, these terms neither limit nor waive your rights under the mandatory law of your
+country of residence.</p>
+
+<h2>9. Changes to these terms</h2>
+
+<p>We may change these terms. We will announce material changes inside the extension before they take
+effect. Continued use afterwards means acceptance. If the changes do not suit you, remove the
+extension and delete your account.</p>
+
+<h2>10. Governing law and disputes</h2>
+
+<p>These terms are governed by the law of the Republic of Poland.</p>
+
+<p>If you are a consumer, this does not deprive you of the protection of mandatory rules of your
+country of residence, and you may bring proceedings before the courts of your place of residence.
+Disputes with EU consumers may also be pursued out of court.</p>
+
+<h2>11. Privacy</h2>
+
+<p>How we handle data is described separately in the <a href="/privacy.html">privacy policy</a>,
+which forms an integral part of these terms.</p>
+
+</div>
+
+</body>
+</html>

@@ -51,6 +51,11 @@ public class SecurityConfig {
                         // Решта actuator-ендпоінтів не віддається взагалі — див.
                         // management.endpoints.web.exposure.include в application.properties.
                         .requestMatchers("/actuator/health").permitAll()
+                        // Політика приватності (static/privacy.html). Chrome Web Store вимагає
+                        // публічне посилання на неї, і рецензент відкриває його без жодного
+                        // токена — тобто сторінка мусить бути доступна анонімно, інакше
+                        // подача відхиляється з причиною «privacy policy URL is not reachable».
+                        .requestMatchers("/privacy.html", "/terms.html").permitAll()
                         // Swagger сюди НЕ входить: він відкривається лише під профілем dev
                         // окремим ланцюжком (SwaggerDevSecurityConfig). У прод-профілі
                         // ці шляхи потрапляють під anyRequest().authenticated() нижче.
@@ -71,7 +76,12 @@ public class SecurityConfig {
     // неможливо забути для нового ендпоінта.
     @Bean
     public JwtDecoder jwtDecoder(@Value("${app.jwt.secret}") String jwtSecretBase64) {
-        byte[] keyBytes = Decoders.BASE64.decode(jwtSecretBase64);
+        // .trim() обов'язковий і тут: JwtService (той, що ПІДПИСУЄ) обрізає пробіли, і якби
+        // значення змінної середовища приїхало з кінцевим переносом рядка — а редактори
+        // змінних на хостингах його додають легко — два шляхи вивели б різні ключі з одного
+        // й того ж секрету. Симптом був би максимально збиваючим з пантелику: свіжий токен
+        // і 401 "An error occurred while attempting to decode the Jwt".
+        byte[] keyBytes = Decoders.BASE64.decode(jwtSecretBase64.trim());
         NimbusJwtDecoder decoder = NimbusJwtDecoder
                 .withSecretKey(new SecretKeySpec(keyBytes, "HmacSHA256"))
                 .build();
