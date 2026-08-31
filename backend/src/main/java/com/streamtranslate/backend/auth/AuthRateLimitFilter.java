@@ -96,9 +96,15 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     private static String clientKey(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
-            // Заголовок може містити ланцюжок "клієнт, проксі1, проксі2" — беремо перший.
-            int comma = forwarded.indexOf(',');
-            return (comma > 0 ? forwarded.substring(0, comma) : forwarded).trim();
+            // Беремо ОСТАННІЙ елемент ланцюжка, а не перший. Заголовок має вигляд
+            // "клієнт, проксі1, проксі2", і ліва частина повністю під контролем того,
+            // хто робить запит: клієнт може надіслати свій X-Forwarded-For, а балансувальник
+            // лише допише до нього справжню адресу праворуч. Тобто на першому елементі
+            // обмеження обходиться одним заголовком зі випадковим значенням на кожен запит —
+            // кожна спроба лягала б у власне вікно, і ліміт не спрацьовував би ніколи.
+            // Праворуч стоїть те, що дописав наш проксі, і підробити це клієнт не може.
+            int comma = forwarded.lastIndexOf(',');
+            return (comma >= 0 ? forwarded.substring(comma + 1) : forwarded).trim();
         }
         return request.getRemoteAddr();
     }

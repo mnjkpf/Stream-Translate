@@ -98,10 +98,38 @@ function requestCaptionTracksFromBridge(): Promise<PollFetchResult> {
   });
 }
 
+// Дозволені хости для треку субтитрів. Перевіряємо саме розібраний URL, а не
+// префікс рядка: "https://www.youtube.com.evil.tld/..." починається з очікуваного
+// тексту, але веде на чужий сервер, і startsWith такого не помітив би.
+const YOUTUBE_CAPTION_HOSTS = new Set([
+  'www.youtube.com', 'youtube.com', 'm.youtube.com', 'www.youtube-nocookie.com'
+]);
+
+function isYouTubeCaptionUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw, location.origin);
+    return url.protocol === 'https:' && YOUTUBE_CAPTION_HOSTS.has(url.hostname);
+  } catch {
+    return false; // не URL узагалі
+  }
+}
+
 // §1.2.B: один трек, одна спроба timedtext. Порожнє/не-JSON тіло (типова
 // pot-token-відмова) — НЕ виняток, а сигнал "цей трек не спрацював", щоб
 // виклик спробував наступного кандидата, перш ніж здатись.
 async function fetchTrackCues(track: CaptionTrack): Promise<Cue[] | null> {
+  // baseUrl приходить із MAIN world через window.postMessage, а туди може написати
+  // БУДЬ-ЯКИЙ скрипт сторінки: перевірка event.source === window його не відсіює,
+  // бо сторінка постить у те саме вікно. requestId теж не захищає — він летить у
+  // відкритому повідомленні, тож зловмисний скрипт бачить його і встигає
+  // відповісти першим. Без цієї перевірки ми зробили б fetch із credentials
+  // на будь-яку адресу, яку він підсуне, тобто відправили б куки користувача
+  // на чужий сервер. Тому джерело субтитрів — тільки домени YouTube.
+  if (!isYouTubeCaptionUrl(track.baseUrl)) {
+    console.warn('[Subtitle Translator] YouTube: відкинуто трек із чужим доменом у baseUrl');
+    return null;
+  }
+
   const sep = track.baseUrl.includes('?') ? '&' : '?';
   const url = `${track.baseUrl}${sep}fmt=json3`;
 
